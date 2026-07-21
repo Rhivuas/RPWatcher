@@ -1,6 +1,6 @@
 # RPWatcher 1.0.0
 
-RPWatcher 1.0.0 ist die erste stabile öffentliche Version des deutschsprachigen World-of-Warcraft-Retail-Addons. Sie übernimmt den vollständig getesteten Funktionsstand des Release Candidates ohne neue Kernfunktionen.
+RPWatcher 1.0.0 ist die erste stabile öffentliche Version des deutschsprachigen World-of-Warcraft-Retail-Addons. Sie übernimmt den vollständig getesteten Funktionsumfang der stabilen Version 1.0.0 ohne neue Kernfunktionen.
 
 ## Wichtigste Funktionen
 
