@@ -73,10 +73,8 @@ resizeHandle:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
 
 local rows = {}
 local nextElapsedUpdate = 0
-
-scrollFrame:SetScript("OnSizeChanged", function(_, width)
-    scrollChild:SetWidth(math.max(1, width))
-end)
+local currentWatchers
+local listNeedsRefresh = true
 
 local function formatElapsed(seconds)
     seconds = math.max(0, math.floor(seconds or 0))
@@ -168,7 +166,7 @@ local function openRowProfile(button)
     local opened, reason = RPWatcher.TRP3:OpenProfile(watcher)
     if opened then
         return
-    elseif reason == "requested" or reason == "cooldown" then
+    elseif reason == "requested" or reason == "queued" or reason == "cooldown" then
         print("|cff66ccffRPWatcher|r: Profildaten wurden angefragt. Versuche es in wenigen Sekunden erneut.")
     else
         print("|cff66ccffRPWatcher|r: Das TRP3-Profil konnte nicht geöffnet werden.")
@@ -183,8 +181,6 @@ local function acquireRow(index)
 
     row = CreateFrame("Frame", nil, scrollChild)
     row:SetHeight(ROW_HEIGHT)
-    row:SetPoint("TOPLEFT", 0, -((index - 1) * ROW_HEIGHT))
-    row:SetPoint("TOPRIGHT", 0, -((index - 1) * ROW_HEIGHT))
 
     row.statusIcon = row:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     row.statusIcon:SetPoint("LEFT", 4, 0)
@@ -265,6 +261,61 @@ local function updateRow(row, watcher, now)
     row:Show()
 end
 
+local function hideRow(row)
+    hideOwnedTooltip(row.nameButton)
+    hideOwnedTooltip(row.profileButton)
+    row.watcher = nil
+    row:Hide()
+end
+
+local function refreshVisibleRows(now)
+    if not frame:IsShown() or not currentWatchers then
+        return
+    end
+
+    local firstWatcherIndex = math.floor(scrollFrame:GetVerticalScroll() / ROW_HEIGHT) + 1
+    local visibleCapacity = math.max(1, math.ceil(scrollFrame:GetHeight() / ROW_HEIGHT) + 1)
+    local rowsNeeded = math.max(0, math.min(visibleCapacity, watcherCount - firstWatcherIndex + 1))
+    for poolIndex = 1, rowsNeeded do
+        local watcherIndex = firstWatcherIndex + poolIndex - 1
+        local row = acquireRow(poolIndex)
+        local watcher = currentWatchers[watcherIndex]
+        row:ClearAllPoints()
+        row:SetPoint("TOPLEFT", 0, -((watcherIndex - 1) * ROW_HEIGHT))
+        row:SetPoint("TOPRIGHT", 0, -((watcherIndex - 1) * ROW_HEIGHT))
+        updateRow(row, watcher, now)
+    end
+    for poolIndex = rowsNeeded + 1, #rows do
+        hideRow(rows[poolIndex])
+    end
+end
+
+local function renderWatcherList()
+    currentWatchers = RPWatcher.Scanner:GetSortedWatchers()
+    local contentHeight = math.max(1, watcherCount * ROW_HEIGHT)
+    scrollChild:SetHeight(contentHeight)
+    scrollFrame:UpdateScrollChildRect()
+
+    local maximumScroll = math.max(0, contentHeight - scrollFrame:GetHeight())
+    if scrollFrame:GetVerticalScroll() > maximumScroll then
+        scrollFrame:SetVerticalScroll(maximumScroll)
+    end
+
+    refreshVisibleRows(GetTime())
+    listNeedsRefresh = false
+end
+
+scrollFrame:SetScript("OnSizeChanged", function(_, width)
+    scrollChild:SetWidth(math.max(1, width))
+    if frame:IsShown() then
+        refreshVisibleRows(GetTime())
+    end
+end)
+
+scrollFrame:SetScript("OnVerticalScroll", function()
+    refreshVisibleRows(GetTime())
+end)
+
 local function saveCurrentSize()
     RPWatcher.Settings:SaveWindowSize(frame:GetWidth(), frame:GetHeight())
 end
@@ -330,9 +381,14 @@ function UI:UpdateActualVisibility()
     local shouldShow = self:IsManuallyShown()
         and (not RPWatcher.Settings:IsAutoHideEnabled() or watcherCount > 0)
 
+    local wasShown = frame:IsShown()
     if shouldShow then
         frame:Show()
-        self:RefreshElapsedTimes(GetTime(), true)
+        if listNeedsRefresh and RPWatcher.Scanner then
+            renderWatcherList()
+        elseif not wasShown then
+            self:RefreshElapsedTimes(GetTime(), true)
+        end
     else
         frame:Hide()
     end
@@ -364,46 +420,19 @@ function UI:RefreshWatcherList()
         return
     end
 
-    local watchers = RPWatcher.Scanner:GetSortedWatchers()
-    watcherCount = #watchers
-    local now = GetTime()
-    local activeCount = 0
-    local inactiveCount = 0
-    local unknownCount = 0
-
-    for index = 1, watcherCount do
-        local watcher = watchers[index]
-        updateRow(acquireRow(index), watcher, now)
-        if watcher.observationStatus == RPWatcher.Scanner.STATUS_ACTIVE then
-            activeCount = activeCount + 1
-        elseif watcher.observationStatus == RPWatcher.Scanner.STATUS_INACTIVE then
-            inactiveCount = inactiveCount + 1
-        else
-            unknownCount = unknownCount + 1
-        end
+    if RPWatcher.Performance then
+        RPWatcher.Performance:RecordUIDataUpdate()
     end
-    for index = watcherCount + 1, #rows do
-        hideOwnedTooltip(rows[index].nameButton)
-        hideOwnedTooltip(rows[index].profileButton)
-        rows[index].watcher = nil
-        rows[index]:Hide()
-    end
+    local activeCount, inactiveCount, unknownCount = RPWatcher.Scanner:GetWatcherStatusCounts()
+    watcherCount = activeCount + inactiveCount + unknownCount
+    listNeedsRefresh = true
 
     statusSummary:SetText(("Aktuell: %d · Vorher: %d · Unbekannt: %d"):format(activeCount, inactiveCount, unknownCount))
 
-    local contentHeight = math.max(1, watcherCount * ROW_HEIGHT)
-    scrollChild:SetHeight(contentHeight)
-    scrollFrame:UpdateScrollChildRect()
-
-    local maximumScroll = math.max(0, contentHeight - scrollFrame:GetHeight())
-    if scrollFrame:GetVerticalScroll() > maximumScroll then
-        scrollFrame:SetVerticalScroll(maximumScroll)
-    end
-
     emptyHint:SetShown(watcherCount == 0)
     scrollFrame:SetShown(watcherCount > 0)
-    nextElapsedUpdate = now + 1
     self:UpdateActualVisibility()
+    nextElapsedUpdate = GetTime() + 1
 end
 
 function UI:RefreshElapsedTimes(now, force)
@@ -420,6 +449,9 @@ function UI:RefreshElapsedTimes(now, force)
         if row:IsShown() and row.watcher then
             updateRowTime(row, now)
         end
+    end
+    if RPWatcher.Performance then
+        RPWatcher.Performance:RecordUITimeUpdate()
     end
 end
 

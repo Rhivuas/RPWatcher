@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.5.0
+
+- Freundliche Spieler-Nameplates beim Hinzufügen statisch validiert und als schnelle Kandidaten zwischengespeichert.
+- Dauerhaften Target-Scan auf GUID-Integrität und Target-Prüfung reduziert.
+- Seltenen vollständigen Nameplate-Abgleich im bestehenden Scanner-Ticker ergänzt.
+- Temporäre Token-Zuordnungen über `PLAYER_LEAVING_WORLD` und `PLAYER_ENTERING_WORLD` gehärtet.
+- Standardmäßig deaktivierte, nicht persistente Performance-Diagnose über `debugprofilestop()` hinzugefügt.
+- `/rpw perf` mit Aktivierung, Reset und kompaktem Bericht ergänzt.
+- UI-Zeilen auf den sichtbaren Scrollausschnitt virtualisiert und Aktualisierungen verborgener Zeilen vermieden.
+- Direkte RPWatcher-TRP3-Anfragen auf höchstens eine Anfrage pro Sekunde gedrosselt.
+- Synthetische Lasttests mit `/rpw stress 25|50|100|200|clear` ergänzt.
+- Vorherigen Hotpath und technische Optimierungsgründe in `PERFORMANCE_AUDIT.md` dokumentiert.
+
 ## 0.4.0
 
 - Zentrales `Settings.lua`-Modul mit Datenbankschema 2, Validierung und Migration ergänzt.

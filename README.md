@@ -4,11 +4,42 @@ RPWatcher ist ein World-of-Warcraft-Retail-Addon. Es erkennt freundliche Spieler
 
 ## Entwicklungsstand
 
-Version 0.4.0 implementiert Phase 4 mit einer eigenen Einstellungsseite, robuster Fensterverwaltung und Statuszählern. Die getestete GUID-basierte Nameplate-, Target- und TRP3-Logik aus den Versionen 0.2.0 und 0.3.0 bleibt erhalten. Der zentrale Scanner läuft unverändert alle 0,25 Sekunden; ein zweiter dauerhafter Timer wird nicht verwendet.
+Version 0.5.0 implementiert Phase 5 zur operativen Härtung für stark besuchte RP-Orte und Großereignisse. Die getesteten Status-, Fenster-, Settings- und TRP3-Funktionen bleiben erhalten. Der zentrale Target-Scanner läuft weiterhin alle 0,25 Sekunden; es gibt weder einen zweiten dauerhaften RPWatcher-Ticker noch eine `OnUpdate`-Schleife.
 
 Ein Spieler erscheint erst, nachdem er den eigenen Charakter mindestens einmal im Target hatte. Berücksichtigt werden ausschließlich gültige Nameplate-Unit-Tokens freundlicher Spielercharaktere ungleich dem eigenen Spieler.
 
 Watcher, RP-Namen, Profilinformationen und TRP3-Abfragezustände sind reine Laufzeitdaten. `RPWatcherDB` speichert ausschließlich Addon-, Fenster- und Anzeigeeinstellungen.
+
+## Optimierte Scannerarchitektur
+
+Beim Ereignis `NAME_PLATE_UNIT_ADDED` prüft RPWatcher einmalig gültige Unit, Spielerstatus, Freundlichkeit, Selbstausschluss, GUID und vollständigen WoW-Namen. Nur gültige freundliche Spieler werden in die schnelle Kandidatenliste aufgenommen. Der 0,25-Sekunden-Pfad prüft anschließend nur noch:
+
+- ob der Unit-Token weiterhin dieselbe GUID besitzt,
+- ob dessen zwischengespeicherter Target-Token den Spieler bezeichnet.
+
+Der Target-Token wird nicht bei jedem Scan neu zusammengesetzt. Alle fünf Sekunden gleicht derselbe bestehende Ticker die aktuellen Frames aus `C_NamePlate.GetNamePlates()` vollständig ab. Dadurch werden verpasste Ereignisse, geänderte statische Eigenschaften und wiederverwendete Tokens korrigiert, ohne einen weiteren Timer anzulegen. Die Entfernung unbekannter Watcher wird innerhalb desselben Ticketers einmal pro Sekunde geprüft.
+
+`PLAYER_LEAVING_WORLD` entfernt temporäre Nameplate- und GUID-Zuordnungen und setzt betroffene echte Watcher auf Unbekannt, ohne ihre Laufzeithistorie sofort zu löschen. `PLAYER_ENTERING_WORLD` liest vorhandene Nameplates erneut ein. Der Hotpath vor Phase 5 und die technischen Gründe sind in `PERFORMANCE_AUDIT.md` dokumentiert.
+
+## Performance-Diagnose
+
+Die Diagnose ist standardmäßig ausgeschaltet und wird niemals gespeichert. Im ausgeschalteten Scannerpfad entsteht nur eine boolesche Abfrage pro Tick; `debugprofilestop()` wird ausschließlich bei aktivierter Messung aufgerufen.
+
+```text
+/rpw perf
+/rpw perf on
+/rpw perf off
+/rpw perf reset
+/rpw perf report
+```
+
+Erfasst werden Scananzahl, gesamte, durchschnittliche und maximale Scanzeit, geprüfte Kandidaten, aktuelle Nameplates und Kandidaten, echte und synthetische Watcher, Statuswechsel, erzeugte und entfernte echte Watcher, UI-Daten- und Zeitaktualisierungen sowie versendete und gedrosselte TRP3-Anfragen. `/rpw perf on` beginnt immer mit leeren Messwerten; `/rpw perf off` behält den letzten Bericht im Arbeitsspeicher.
+
+## Synthetischer Belastungstest
+
+`/rpw stress 25`, `50`, `100` oder `200` ersetzt ausschließlich zuvor erzeugte Stressdaten durch die gewünschte Menge. Die Einträge werden deterministisch auf Grün, Grau und Unbekannt verteilt. Sie verwenden reservierte interne Testschlüssel, keine Unit-Tokens und keine echten GUIDs. Sie lösen weder Unit- noch TRP3-Aufrufe aus, besitzen keinen Profilbutton und werden nicht gespeichert.
+
+Unbekannte Stress-Einträge bleiben absichtlich bis zum nächsten Stress-Befehl oder Clear erhalten, damit auch längere UI-Tests mit einer kurzen realen Aufbewahrungszeit möglich sind. `/rpw stress clear` entfernt nur Stressdaten. Echte Watcher und die drei normalen `/rpw test`-Einträge bleiben unangetastet. `/rpw clear` entfernt weiterhin sämtliche Laufzeitdaten.
 
 ## Statuszustände
 
@@ -54,6 +85,8 @@ Die Migration legt keine Watcher-, Profil- oder RP-Daten an.
 
 RPWatcher funktioniert vollständig ohne installiertes oder aktiviertes Total RP 3. Wenn Total RP 3 verfügbar ist, wird ein bekannter nichtleerer RP-Name angezeigt, andernfalls der vollständige normale WoW-Name. Der normale WoW-Name bleibt immer als technische Identität erhalten. Profilanfragen erfolgen nur für echte Watcher und sind pro GUID 30 Sekunden lang gedrosselt.
 
+Da RPWatcher den öffentlichen Export `TRP3_API.r.sendQuery` direkt verwendet und damit nicht durch die interne TRP3-Nameplate-Slot-Queue läuft, puffert Phase 5 RPWatcher-Anfragen zusätzlich. Über den bestehenden Scanner wird höchstens eine Anfrage pro Sekunde versendet. Doppelte Queue-Einträge werden verhindert; entfernte Watcher werden vor dem Versand verworfen. `/rpw clear` leert auch die Warteschlange. Diese konservative Rate verhindert Anfragespitzen bei vielen neuen Watchern, ohne einzelne Profile merklich lange zu blockieren.
+
 Später eintreffende Profildaten werden über den zentralen Total-RP-3-Callback `REGISTER_DATA_UPDATED` verarbeitet. Es gibt keinen zusätzlichen Polling-Ticker. Testdaten lösen niemals TRP3-Kommunikation aus.
 
 ### Technische Abhängigkeit der Profilöffnung
@@ -91,6 +124,9 @@ Die Interface-Nummer `120007` stammt aus `F:\World of Warcraft\_retail_\Interfac
 - `/rpw lock` – Fenster sperren und Zustand speichern.
 - `/rpw unlock` – Fenster entsperren und Zustand speichern.
 - `/rpw reset` – Position, Größe, Skalierung, Transparenz und Sperrstatus zurücksetzen.
+- `/rpw perf [on|off|reset|report]` – nicht persistente Laufzeitdiagnose steuern.
+- `/rpw stress 25|50|100|200` – synthetische Lastdaten erzeugen.
+- `/rpw stress clear` – ausschließlich synthetische Stressdaten entfernen.
 
 Unbekannte Argumente zeigen die Hilfe an.
 
@@ -146,6 +182,89 @@ Unbekannte Argumente zeigen die Hilfe an.
 6. Grün → Grau → Grün, Neubeginn des grünen Zeitmessers, Nameplate-Verlust zu Unbekannt und GUID-Wiederkehr ohne Duplikat erneut prüfen.
 7. `/rpw trp3`, `/rpw refresh`, `/rpw help`, `/rpwatcher` und einen unbekannten Slash-Unterbefehl testen.
 
+## Manuelle Ingame-Testanleitung für Phase 5
+
+### Baseline und Zonenwechsel
+
+1. Mit aktiviertem RPWatcher 0.5.0 und BugSack einloggen und `/reload` ausführen.
+2. Prüfen, dass Fensterposition, Größe, Sichtbarkeit, Auto-Ausblendung und Settings aus 0.4.0 erhalten sind.
+3. Einen freundlichen Spieler über seine sichtbare Nameplate Grün, Grau und Unbekannt durchlaufen lassen.
+4. Während eine Nameplate sichtbar ist einen Ladebildschirm beziehungsweise Zonenwechsel auslösen. Der Eintrag darf nicht als weiterhin sichtbarer Token behandelt werden und soll gegebenenfalls Unbekannt werden.
+5. Nach `PLAYER_ENTERING_WORLD` müssen vorhandene Nameplates wieder erkannt werden; es dürfen keine Duplikate oder Lua-Fehler entstehen.
+6. Mehrere Zonenwechsel und `/reload` wiederholen. Die Scanfrequenz darf sich nicht vervielfachen.
+
+### Performance-Vergleich
+
+1. Diagnose einschalten:
+
+   ```text
+   /rpw perf on
+   ```
+
+2. Fünf Minuten in einer ruhigen Umgebung mit wenigen Nameplates warten und anschließend ausgeben:
+
+   ```text
+   /rpw perf report
+   ```
+
+3. Erneut `/rpw perf on` ausführen, um die Messung zurückzusetzen, und mindestens fünf Minuten in Goldhain, Sturmwind oder einer vergleichbar vollen RP-Veranstaltung messen.
+4. Währenddessen bewegen, Nameplates in Reichweite kommen und verschwinden lassen sowie mehrere Target-Wechsel beobachten.
+5. Fenster zunächst sichtbar, anschließend ungefähr zwei Minuten manuell verborgen testen. Target-Erkennung muss weiterlaufen; ausschließlich zeitbedingte UI-Aktualisierungen sollen während des Verbergens kaum beziehungsweise nicht zunehmen.
+6. Fenster wieder anzeigen. Alle sichtbaren Zeittexte müssen sofort stimmen.
+7. Bericht ausgeben und Messung anhalten:
+
+   ```text
+   /rpw perf report
+   /rpw perf off
+   /rpw perf report
+   ```
+
+8. Prüfen, dass der zweite Bericht erhalten bleibt. `/reload` muss die Diagnose wieder ausgeschaltet und die Werte verworfen haben.
+
+### Synthetische UI-Last
+
+1. Nacheinander ausführen:
+
+   ```text
+   /rpw stress 25
+   /rpw stress 50
+   /rpw stress 100
+   /rpw stress 200
+   ```
+
+2. Bei jeder Größe Statuszähler, Scrollbereich, laufende Zeiten und flüssiges Verschieben beziehungsweise Skalieren prüfen.
+3. Mit 200 Einträgen schnell durch die gesamte Liste scrollen. Zeilen dürfen weder leer hängen bleiben noch falsche Tooltips oder Profilbuttons zeigen.
+4. Fenster schließen und wieder öffnen. Zeitwerte müssen nachgezogen werden.
+5. Parallel einen echten Watcher erfassen. Er muss korrekt sortiert bleiben und darf nicht durch neue Stressdaten ersetzt werden.
+6. Zusätzlich `/rpw test` ausführen. Danach nur Stressdaten entfernen:
+
+   ```text
+   /rpw stress clear
+   ```
+
+   Der echte Watcher und die drei normalen Testeinträge müssen bestehen bleiben.
+7. Ungültige Eingaben wie `/rpw stress 0`, `/rpw stress 201` und `/rpw stress foo` müssen lediglich die Hilfe anzeigen.
+8. `/rpw clear` muss anschließend echte Watcher, normale Testdaten, Stressdaten und ausstehende RPWatcher-TRP3-Anfragen entfernen.
+
+### TRP3-Anfragedrosselung
+
+1. Total RP 3 aktivieren, `/rpw perf on` eingeben und in kurzer Zeit mehrere echte neue Watcher erfassen.
+2. Im Bericht darf die Zahl versendeter RPWatcher-Anfragen höchstens ungefähr um eine pro Sekunde steigen.
+3. `/rpw refresh` mehrfach kurz hintereinander ausführen. Individueller 30-Sekunden-Cooldown und Queue-Duplikatschutz müssen greifen.
+4. Einen Watcher löschen beziehungsweise `/rpw clear` ausführen, während Anfragen warten. Gelöschte Queue-Einträge dürfen nicht später versendet oder als Watcher wiederhergestellt werden.
+5. Total RP 3 deaktiviert sowie nach RPWatcher geladen testen. Beide Fälle müssen ohne Lua-Fehler funktionieren.
+
+### Zurückzumeldender Performance-Bericht
+
+Bitte jeweils den vollständigen Chattext von `/rpw perf report` für folgende Situationen übermitteln:
+
+- ruhiger Ort, Fenster sichtbar, Messdauer mindestens fünf Minuten;
+- voller RP-Ort, Fenster sichtbar, Messdauer mindestens fünf Minuten;
+- voller RP-Ort, Fenster verborgen, Messdauer mindestens zwei Minuten;
+- `/rpw stress 200` mit mehrmaligem vollständigem Scrollen.
+
+Zusätzlich hilfreich sind Ort, ungefähre sichtbare Nameplate-Anzahl, Messdauer, aktiviertes/deaktiviertes TRP3, beobachtete Ruckler und eventuelle BugSack-Meldungen. Es werden keine GUIDs oder Profile benötigt.
+
 ## Bekannte Einschränkungen und Risiken
 
 - Nur sichtbare Nameplate-Unit-Tokens können live auf ihr Target geprüft werden.
@@ -157,3 +276,5 @@ Unbekannte Argumente zeigen die Hilfe an.
 - Sehr lange Namen werden in schmalen Zeilen abgeschnitten; der vollständige Name bleibt im Tooltip sichtbar.
 - Die installierte Retail-Version enthält keine lose Blizzard-UI-Quellkopie. Die Settings-Registrierung wurde anhand der im Client verfügbaren `Settings`-API und lokal funktionierender aktueller Retail-Addons verifiziert.
 - Ein vollständiger Laufzeittest ist nur in World of Warcraft möglich.
+- Die seltene Integritätsprüfung kann alle fünf Sekunden einen kleinen, messbaren Ausschlag erzeugen; der Maximalwert im Performance-Bericht macht diesen sichtbar.
+- Synthetische Stressdaten prüfen UI und Laufzeitlisten, simulieren aber keine echten Unit-API- oder Netzwerkbedingungen.

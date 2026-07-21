@@ -4,10 +4,16 @@ local TRP3 = {}
 RPWatcher.TRP3 = TRP3
 
 TRP3.PROFILE_REQUEST_COOLDOWN_SECONDS = 30
+TRP3.GLOBAL_REQUEST_INTERVAL_SECONDS = 1
 
 local lastRequestAtByGUID = {}
 local characterIDByGUID = {}
 local guidByCharacterID = {}
+local requestQueue = {}
+local queuedByGUID = {}
+local requestQueueHead = 1
+local requestQueueTail = 0
+local lastGlobalRequestAt = -math.huge
 local callbackRegistration
 local initialized = false
 
@@ -225,14 +231,77 @@ function TRP3:RequestProfile(watcher)
     local now = GetTime()
     local lastRequestAt = lastRequestAtByGUID[watcher.guid]
     if lastRequestAt and now - lastRequestAt < self.PROFILE_REQUEST_COOLDOWN_SECONDS then
+        if RPWatcher.Performance then
+            RPWatcher.Performance:RecordTRP3RequestSkipped()
+        end
         return false, "cooldown"
     end
 
-    lastRequestAtByGUID[watcher.guid] = now
-    local api = getAPI()
-    local sendQuery = getFunction(api and api.r, "sendQuery")
-    local ok = safeCall(sendQuery, characterID)
-    return ok and true or false, ok and "requested" or "failed"
+    if queuedByGUID[watcher.guid] then
+        if RPWatcher.Performance then
+            RPWatcher.Performance:RecordTRP3RequestSkipped()
+        end
+        return false, "queued"
+    end
+
+    requestQueueTail = requestQueueTail + 1
+    requestQueue[requestQueueTail] = {
+        guid = watcher.guid,
+        characterID = characterID,
+    }
+    queuedByGUID[watcher.guid] = true
+    return true, "queued"
+end
+
+function TRP3:ProcessRequestQueue(now)
+    now = now or GetTime()
+    if requestQueueHead > requestQueueTail or not self:IsAvailable() or not self:IsProfileRequestAvailable() then
+        return false
+    end
+    if now - lastGlobalRequestAt < self.GLOBAL_REQUEST_INTERVAL_SECONDS then
+        return false
+    end
+
+    -- RPWatcher calls the public sendQuery export directly, outside TRP3's own
+    -- nameplate slot queue. Process at most one valid entry per global interval.
+    while requestQueueHead <= requestQueueTail do
+        local request = requestQueue[requestQueueHead]
+        requestQueue[requestQueueHead] = nil
+        requestQueueHead = requestQueueHead + 1
+        queuedByGUID[request.guid] = nil
+
+        local watcher = RPWatcher.Scanner and RPWatcher.Scanner:GetWatcherByGUID(request.guid)
+        if watcher and not watcher.isTest then
+            local lastRequestAt = lastRequestAtByGUID[request.guid]
+            if lastRequestAt and now - lastRequestAt < self.PROFILE_REQUEST_COOLDOWN_SECONDS then
+                if RPWatcher.Performance then
+                    RPWatcher.Performance:RecordTRP3RequestSkipped()
+                end
+            else
+                lastRequestAtByGUID[request.guid] = now
+                lastGlobalRequestAt = now
+                local api = getAPI()
+                local sendQuery = getFunction(api and api.r, "sendQuery")
+                local ok = safeCall(sendQuery, request.characterID)
+                if ok and RPWatcher.Performance then
+                    RPWatcher.Performance:RecordTRP3RequestSent()
+                elseif not ok and RPWatcher.Performance then
+                    RPWatcher.Performance:RecordTRP3RequestSkipped()
+                end
+                if requestQueueHead > requestQueueTail then
+                    clearTable(requestQueue)
+                    requestQueueHead = 1
+                    requestQueueTail = 0
+                end
+                return ok and true or false
+            end
+        end
+    end
+
+    clearTable(requestQueue)
+    requestQueueHead = 1
+    requestQueueTail = 0
+    return false
 end
 
 function TRP3:RefreshWatcher(watcher, requestIfMissing)
@@ -386,12 +455,18 @@ function TRP3:ForgetWatcher(guid)
     end
     characterIDByGUID[guid] = nil
     lastRequestAtByGUID[guid] = nil
+    queuedByGUID[guid] = nil
 end
 
 function TRP3:ClearRuntimeData()
     clearTable(lastRequestAtByGUID)
     clearTable(characterIDByGUID)
     clearTable(guidByCharacterID)
+    clearTable(requestQueue)
+    clearTable(queuedByGUID)
+    requestQueueHead = 1
+    requestQueueTail = 0
+    lastGlobalRequestAt = -math.huge
 end
 
 function TRP3:HandleAvailabilityChanged()

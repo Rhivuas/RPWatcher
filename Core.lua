@@ -39,6 +39,8 @@ function Core:PrintHelp()
     print("  /rpw lock - Fenster sperren")
     print("  /rpw unlock - Fenster entsperren")
     print("  /rpw reset - Position und Fensterdarstellung zurücksetzen")
+    print("  /rpw perf [on|off|reset|report] - Laufzeitdiagnose steuern")
+    print("  /rpw stress <25|50|100|200|clear> - synthetische Lastdaten verwalten")
 end
 
 function Core:HandleSlashCommand(message)
@@ -90,6 +92,26 @@ function Core:HandleSlashCommand(message)
             RPWatcher.Settings:ResetWindowSettings()
         end
         print("|cff66ccffRPWatcher|r: Fensterposition und Darstellung wurden zurückgesetzt.")
+    elseif command == "perf" or command:match("^perf%s+") then
+        if RPWatcher.Performance then
+            RPWatcher.Performance:HandleCommand(command:match("^perf%s*(.*)$") or "")
+        end
+    elseif command == "stress" or command:match("^stress%s+") then
+        local argument = command:match("^stress%s*(.*)$") or ""
+        if argument == "clear" then
+            local removed = RPWatcher.Scanner and RPWatcher.Scanner:RemoveStressData() or 0
+            print(("|cff66ccffRPWatcher|r: %d Stress-Testeinträge wurden entfernt."):format(removed))
+        else
+            local count = tonumber(argument)
+            if RPWatcher.Scanner and RPWatcher.Scanner:AddStressData(count) then
+                if RPWatcher.UI then
+                    RPWatcher.UI:SetManualVisibility(true)
+                end
+                print(("|cff66ccffRPWatcher|r: %d synthetische Stress-Testeinträge wurden erzeugt."):format(count))
+            else
+                print("|cff66ccffRPWatcher|r: Verwendung: /rpw stress 25|50|100|200|clear")
+            end
+        end
     else
         print("|cff66ccffRPWatcher|r: Unbekannter Befehl.")
         self:PrintHelp()
@@ -97,6 +119,10 @@ function Core:HandleSlashCommand(message)
 end
 
 function Core:Initialize()
+    if RPWatcher.Performance then
+        RPWatcher.Performance:Initialize()
+    end
+
     if RPWatcher.Settings then
         RPWatcher.Settings:Initialize()
     end

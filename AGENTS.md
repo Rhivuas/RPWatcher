@@ -27,6 +27,14 @@
 - Änderungen an Fenster und Anzeige dürfen Watcher-Laufzeitdaten nicht beeinflussen.
 - Das Scanner-Intervall darf nicht als Benutzeroption freigegeben werden.
 - Keine Einstellung darf einen zusätzlichen dauerhaften Scanner erzeugen.
+- Performanceoptimierungen müssen messbar oder technisch klar begründet sein.
+- Diagnosefunktionen sind standardmäßig deaktiviert und nicht persistent.
+- Statische Unit-Eigenschaften sollen nicht grundlos in jedem schnellen Scan erneut geprüft werden.
+- Zonenwechsel müssen temporäre Unit-Token-Zuordnungen sicher bereinigen.
+- Es darf weiterhin nur einen dauerhaften Scanner-Ticker geben.
+- Stress-Testdaten dürfen keine Unit- oder TRP3-API mit künstlichen Identitäten aufrufen.
+- Performance-Messwerte dürfen nicht in SavedVariables gespeichert werden.
+- Optimierungen dürfen die funktionalen Statusregeln nicht verändern.
 - Keine externe Bibliothek ohne ausdrückliche Freigabe.
 - Nach jeder Phase ist eine manuelle Ingame-Testanleitung erforderlich.
 - Codex kann WoW nicht selbst vollständig testen; die Ingame-Tests übernimmt der Benutzer.

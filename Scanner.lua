@@ -7,15 +7,20 @@ Scanner.STATUS_ACTIVE = "ACTIVE"
 Scanner.STATUS_INACTIVE = "INACTIVE"
 Scanner.STATUS_UNKNOWN = "UNKNOWN"
 Scanner.SCAN_INTERVAL_SECONDS = 0.25
+Scanner.INTEGRITY_INTERVAL_SECONDS = 5
+Scanner.EXPIRY_INTERVAL_SECONDS = 1
 
 -- Scanner-owned runtime state. Consumers must use the public methods below.
-local visibleUnits = {}
+local visibleNameplateTokens = {}
+local candidatesByUnitToken = {}
 local guidByUnitToken = {}
 local unitTokenByGUID = {}
 local watchersByGUID = {}
 local sortedWatchers = {}
 local staleUnitTokens = {}
 local expiredGUIDs = {}
+local seenNameplateTokens = {}
+local stressGUIDs = {}
 
 local eventFrame = CreateFrame("Frame")
 local scanTicker
@@ -23,10 +28,14 @@ local changeCallback
 local sortedListDirty = true
 local dataChanged = false
 local initialized = false
+local playerInWorld = false
+local nextIntegrityCheckAt = 0
+local nextExpiryCheckAt = 0
 
 local TEST_GUID_ACTIVE = "RPWATCHER-TEST-ACTIVE"
 local TEST_GUID_INACTIVE = "RPWATCHER-TEST-INACTIVE"
 local TEST_GUID_UNKNOWN = "RPWATCHER-TEST-UNKNOWN"
+local STRESS_GUID_PREFIX = "RPWATCHER-STRESS-"
 
 local STATUS_ORDER = {
     [Scanner.STATUS_ACTIVE] = 1,
@@ -89,38 +98,37 @@ local function isValidUnitToken(unitToken)
     return type(unitToken) == "string" and unitToken ~= ""
 end
 
-local function getQualifiedUnitGUID(unitToken)
+local function getQualifiedUnit(unitToken)
     if not isValidUnitToken(unitToken) or not UnitExists(unitToken) then
-        return nil
+        return nil, nil
     end
     if not UnitIsPlayer(unitToken) then
-        return nil
+        return nil, nil
     end
     if not UnitIsFriend("player", unitToken) then
-        return nil
+        return nil, nil
     end
     if UnitIsUnit(unitToken, "player") then
-        return nil
+        return nil, nil
     end
 
-    return UnitGUID(unitToken)
+    local guid = UnitGUID(unitToken)
+    local fullName = GetUnitName(unitToken, true)
+    if type(guid) ~= "string" or guid == "" or type(fullName) ~= "string" or fullName == "" then
+        return nil, nil
+    end
+    return guid, fullName
 end
 
-local function isTargetingPlayer(unitToken)
-    if not isValidUnitToken(unitToken) then
+local function isTargetingPlayer(candidate)
+    if not candidate or not isValidUnitToken(candidate.targetToken) then
         return false
     end
 
-    local targetToken = unitToken .. "target"
-    return UnitExists(targetToken) and UnitIsUnit(targetToken, "player") or false
+    return UnitExists(candidate.targetToken) and UnitIsUnit(candidate.targetToken, "player") or false
 end
 
-local function createWatcher(guid, unitToken, now)
-    local fullName = GetUnitName(unitToken, true)
-    if type(fullName) ~= "string" or fullName == "" then
-        return nil
-    end
-
+local function createWatcher(guid, unitToken, fullName, now)
     local watcher = {
         guid = guid,
         name = fullName,
@@ -138,6 +146,9 @@ local function createWatcher(guid, unitToken, now)
     }
     watchersByGUID[guid] = watcher
     markDataChanged(watcher, now)
+    if RPWatcher.Performance then
+        RPWatcher.Performance:RecordWatcherCreated()
+    end
 
     if RPWatcher.TRP3 and RPWatcher.TRP3.OnWatcherCreated then
         RPWatcher.TRP3:OnWatcherCreated(watcher)
@@ -150,6 +161,9 @@ local function setWatcherActive(watcher, now)
         watcher.observationStatus = Scanner.STATUS_ACTIVE
         watcher.targetStartedAt = now
         markDataChanged(watcher, now)
+        if not watcher.isTest and RPWatcher.Performance then
+            RPWatcher.Performance:RecordStatusChange()
+        end
     end
     watcher.lastTargetConfirmedAt = now
 end
@@ -162,6 +176,9 @@ local function setWatcherInactive(watcher, now)
     watcher.observationStatus = Scanner.STATUS_INACTIVE
     watcher.targetLostAt = now
     markDataChanged(watcher, now)
+    if not watcher.isTest and RPWatcher.Performance then
+        RPWatcher.Performance:RecordStatusChange()
+    end
 end
 
 local function setWatcherUnknown(watcher, now)
@@ -174,11 +191,14 @@ local function setWatcherUnknown(watcher, now)
     watcher.unitToken = nil
     watcher.nameplateHiddenAt = now
     markDataChanged(watcher, now)
+    if not watcher.isTest and RPWatcher.Performance then
+        RPWatcher.Performance:RecordStatusChange()
+    end
 end
 
-local function detachUnitToken(unitToken, now)
+local function detachCandidate(unitToken, now)
     local guid = guidByUnitToken[unitToken]
-    visibleUnits[unitToken] = nil
+    candidatesByUnitToken[unitToken] = nil
     guidByUnitToken[unitToken] = nil
 
     if not guid then
@@ -194,11 +214,18 @@ local function detachUnitToken(unitToken, now)
     end
 end
 
-local function updateVisibleWatcher(guid, unitToken, now, targetingPlayer)
+local function removeNameplateToken(unitToken, now)
+    visibleNameplateTokens[unitToken] = nil
+    detachCandidate(unitToken, now)
+end
+
+local function updateVisibleWatcher(candidate, now, targetingPlayer)
+    local guid = candidate.guid
+    local unitToken = candidate.unitToken
     local watcher = watchersByGUID[guid]
     if not watcher then
         if targetingPlayer then
-            createWatcher(guid, unitToken, now)
+            createWatcher(guid, unitToken, candidate.fullName, now)
         end
         return
     end
@@ -208,9 +235,8 @@ local function updateVisibleWatcher(guid, unitToken, now, targetingPlayer)
     watcher.isVisible = true
     watcher.lastVisibleAt = now
 
-    local fullName = GetUnitName(unitToken, true)
-    if type(fullName) == "string" and fullName ~= "" and fullName ~= watcher.name then
-        watcher.name = fullName
+    if candidate.fullName ~= watcher.name then
+        watcher.name = candidate.fullName
         markDataChanged(watcher, now)
     end
 
@@ -285,10 +311,15 @@ end
 
 function Scanner:HandleNameplateAdded(unitToken, now, suppressNotification)
     now = now or GetTime()
-    local guid = getQualifiedUnitGUID(unitToken)
+    if not isValidUnitToken(unitToken) then
+        return
+    end
+
+    visibleNameplateTokens[unitToken] = true
+    local guid, fullName = getQualifiedUnit(unitToken)
     if not guid then
-        if isValidUnitToken(unitToken) and guidByUnitToken[unitToken] then
-            detachUnitToken(unitToken, now)
+        if guidByUnitToken[unitToken] then
+            detachCandidate(unitToken, now)
             if not suppressNotification then
                 notifyIfChanged()
             end
@@ -298,19 +329,29 @@ function Scanner:HandleNameplateAdded(unitToken, now, suppressNotification)
 
     local previousGUID = guidByUnitToken[unitToken]
     if previousGUID and previousGUID ~= guid then
-        detachUnitToken(unitToken, now)
+        detachCandidate(unitToken, now)
     end
 
     local previousUnitToken = unitTokenByGUID[guid]
     if previousUnitToken and previousUnitToken ~= unitToken then
-        visibleUnits[previousUnitToken] = nil
+        -- The same GUID can move to a new nameplate token without becoming unknown.
+        visibleNameplateTokens[previousUnitToken] = nil
+        candidatesByUnitToken[previousUnitToken] = nil
         guidByUnitToken[previousUnitToken] = nil
     end
 
-    visibleUnits[unitToken] = true
+    local candidate = candidatesByUnitToken[unitToken]
+    if not candidate then
+        candidate = {}
+        candidatesByUnitToken[unitToken] = candidate
+    end
+    candidate.guid = guid
+    candidate.unitToken = unitToken
+    candidate.targetToken = unitToken .. "target"
+    candidate.fullName = fullName
     guidByUnitToken[unitToken] = guid
     unitTokenByGUID[guid] = unitToken
-    updateVisibleWatcher(guid, unitToken, now, isTargetingPlayer(unitToken))
+    updateVisibleWatcher(candidate, now, isTargetingPlayer(candidate))
 
     if not suppressNotification then
         notifyIfChanged()
@@ -323,62 +364,119 @@ function Scanner:HandleNameplateRemoved(unitToken)
     end
 
     -- Intentionally use the stored mapping: the removed token may no longer expose a GUID.
-    detachUnitToken(unitToken, GetTime())
+    removeNameplateToken(unitToken, GetTime())
     notifyIfChanged()
 end
 
-function Scanner:CaptureExistingNameplates()
+function Scanner:CaptureExistingNameplates(now, suppressNotification)
     local nameplates = C_NamePlate.GetNamePlates()
-    local now = GetTime()
+    now = now or GetTime()
+    clearTable(seenNameplateTokens)
     for index = 1, #nameplates do
         local nameplate = nameplates[index]
         local unitToken = nameplate and nameplate.namePlateUnitToken
-        if unitToken then
+        if isValidUnitToken(unitToken) then
+            seenNameplateTokens[unitToken] = true
             self:HandleNameplateAdded(unitToken, now, true)
         end
     end
+
+    clearTable(staleUnitTokens)
+    for unitToken in pairs(visibleNameplateTokens) do
+        if not seenNameplateTokens[unitToken] then
+            staleUnitTokens[#staleUnitTokens + 1] = unitToken
+        end
+    end
+    for index = 1, #staleUnitTokens do
+        removeNameplateToken(staleUnitTokens[index], now)
+    end
+
+    if not suppressNotification then
+        notifyIfChanged()
+    end
+end
+
+function Scanner:ClearVisibleNameplates()
+    local now = GetTime()
+    clearTable(staleUnitTokens)
+    for unitToken in pairs(visibleNameplateTokens) do
+        staleUnitTokens[#staleUnitTokens + 1] = unitToken
+    end
+    for index = 1, #staleUnitTokens do
+        removeNameplateToken(staleUnitTokens[index], now)
+    end
+    clearTable(visibleNameplateTokens)
+    clearTable(candidatesByUnitToken)
+    clearTable(guidByUnitToken)
+    clearTable(unitTokenByGUID)
+    clearTable(seenNameplateTokens)
     notifyIfChanged()
 end
 
 function Scanner:Scan()
     local now = GetTime()
-    local unknownRetentionSeconds = RPWatcher.Settings:GetUnknownRetentionSeconds()
+    local performanceEnabled = RPWatcher.Performance and RPWatcher.Performance:IsEnabled()
+    local scanStartedAt = performanceEnabled and RPWatcher.Performance:StartScanMeasurement() or nil
+    local candidatesChecked = 0
     clearTable(staleUnitTokens)
 
-    for unitToken in pairs(visibleUnits) do
-        local storedGUID = guidByUnitToken[unitToken]
-        local currentGUID = getQualifiedUnitGUID(unitToken)
-        if not storedGUID or currentGUID ~= storedGUID then
+    -- Fast path: static player/friend/name checks are cached at nameplate add.
+    -- GUID remains dynamic so a reused token can never inherit the previous player.
+    for unitToken, candidate in pairs(candidatesByUnitToken) do
+        candidatesChecked = candidatesChecked + 1
+        local currentGUID = UnitGUID(unitToken)
+        if currentGUID ~= candidate.guid then
             staleUnitTokens[#staleUnitTokens + 1] = unitToken
         else
-            updateVisibleWatcher(storedGUID, unitToken, now, isTargetingPlayer(unitToken))
+            updateVisibleWatcher(candidate, now, isTargetingPlayer(candidate))
         end
     end
 
     for index = 1, #staleUnitTokens do
-        detachUnitToken(staleUnitTokens[index], now)
+        removeNameplateToken(staleUnitTokens[index], now)
     end
 
-    clearTable(expiredGUIDs)
-    for guid, watcher in pairs(watchersByGUID) do
-        if watcher.observationStatus == self.STATUS_UNKNOWN
-            and watcher.nameplateHiddenAt
-            and now - watcher.nameplateHiddenAt >= unknownRetentionSeconds then
-            expiredGUIDs[#expiredGUIDs + 1] = guid
+    if playerInWorld and now >= nextIntegrityCheckAt then
+        -- The same ticker performs a rare full reconciliation; no second timer is used.
+        nextIntegrityCheckAt = now + self.INTEGRITY_INTERVAL_SECONDS
+        self:CaptureExistingNameplates(now, true)
+    end
+
+    if now >= nextExpiryCheckAt then
+        nextExpiryCheckAt = now + self.EXPIRY_INTERVAL_SECONDS
+        local unknownRetentionSeconds = RPWatcher.Settings:GetUnknownRetentionSeconds()
+        clearTable(expiredGUIDs)
+        for guid, watcher in pairs(watchersByGUID) do
+            if watcher.observationStatus == self.STATUS_UNKNOWN
+                and watcher.nameplateHiddenAt
+                and not watcher.isStress
+                and now - watcher.nameplateHiddenAt >= unknownRetentionSeconds then
+                expiredGUIDs[#expiredGUIDs + 1] = guid
+            end
+        end
+
+        for index = 1, #expiredGUIDs do
+            if RPWatcher.TRP3 and RPWatcher.TRP3.ForgetWatcher then
+                RPWatcher.TRP3:ForgetWatcher(expiredGUIDs[index])
+            end
+            local watcher = watchersByGUID[expiredGUIDs[index]]
+            if watcher and not watcher.isTest and RPWatcher.Performance then
+                RPWatcher.Performance:RecordWatcherRemoved()
+            end
+            watchersByGUID[expiredGUIDs[index]] = nil
+            markDataChanged(nil, now)
         end
     end
 
-    for index = 1, #expiredGUIDs do
-        if RPWatcher.TRP3 and RPWatcher.TRP3.ForgetWatcher then
-            RPWatcher.TRP3:ForgetWatcher(expiredGUIDs[index])
-        end
-        watchersByGUID[expiredGUIDs[index]] = nil
-        markDataChanged(nil, now)
+    if playerInWorld and RPWatcher.TRP3 and RPWatcher.TRP3.ProcessRequestQueue then
+        RPWatcher.TRP3:ProcessRequestQueue(now)
     end
-
     notifyIfChanged()
     if RPWatcher.UI then
         RPWatcher.UI:RefreshElapsedTimes(now)
+    end
+    if performanceEnabled then
+        RPWatcher.Performance:RecordScan(scanStartedAt, candidatesChecked)
     end
 end
 
@@ -386,8 +484,20 @@ function Scanner:ClearWatchers()
     if RPWatcher.TRP3 and RPWatcher.TRP3.ClearRuntimeData then
         RPWatcher.TRP3:ClearRuntimeData()
     end
+    if RPWatcher.Performance and RPWatcher.Performance:IsEnabled() then
+        local removedRealWatchers = 0
+        for _, watcher in pairs(watchersByGUID) do
+            if not watcher.isTest then
+                removedRealWatchers = removedRealWatchers + 1
+            end
+        end
+        if removedRealWatchers > 0 then
+            RPWatcher.Performance:RecordWatcherRemoved(removedRealWatchers)
+        end
+    end
     clearTable(watchersByGUID)
     clearTable(sortedWatchers)
+    clearTable(stressGUIDs)
     sortedListDirty = true
     dataChanged = true
     notifyIfChanged()
@@ -446,6 +556,99 @@ function Scanner:AddTestData()
     notifyIfChanged()
 end
 
+function Scanner:RemoveStressData(suppressNotification)
+    clearTable(stressGUIDs)
+    for guid, watcher in pairs(watchersByGUID) do
+        if watcher.isStress then
+            stressGUIDs[#stressGUIDs + 1] = guid
+        end
+    end
+
+    for index = 1, #stressGUIDs do
+        watchersByGUID[stressGUIDs[index]] = nil
+    end
+    if #stressGUIDs > 0 then
+        markDataChanged(nil, GetTime())
+        if not suppressNotification then
+            notifyIfChanged()
+        end
+    end
+    return #stressGUIDs
+end
+
+function Scanner:AddStressData(count)
+    if count ~= 25 and count ~= 50 and count ~= 100 and count ~= 200 then
+        return false
+    end
+
+    self:RemoveStressData(true)
+    local now = GetTime()
+    for index = 1, count do
+        local guid = STRESS_GUID_PREFIX .. ("%03d"):format(index)
+        local statusIndex = (index - 1) % 3
+        local status = statusIndex == 0 and self.STATUS_ACTIVE
+            or statusIndex == 1 and self.STATUS_INACTIVE
+            or self.STATUS_UNKNOWN
+        local elapsed = (index % 55) + 1
+        watchersByGUID[guid] = {
+            guid = guid,
+            name = ("[Stress] Spieler %03d"):format(index),
+            unitToken = nil,
+            isVisible = status ~= self.STATUS_UNKNOWN,
+            observationStatus = status,
+            firstDetectedAt = now - elapsed - 30,
+            targetStartedAt = status == self.STATUS_ACTIVE and now - elapsed or now - elapsed - 20,
+            lastTargetConfirmedAt = now - elapsed,
+            targetLostAt = status == self.STATUS_INACTIVE and now - elapsed or nil,
+            nameplateHiddenAt = status == self.STATUS_UNKNOWN and now - elapsed or nil,
+            lastVisibleAt = now - elapsed,
+            lastChangedAt = now - elapsed,
+            isTest = true,
+            isStress = true,
+        }
+    end
+    markDataChanged(nil, now)
+    notifyIfChanged()
+    return true
+end
+
+function Scanner:GetRuntimeCounts()
+    local nameplateCount = 0
+    local candidateCount = 0
+    local realWatcherCount = 0
+    local testWatcherCount = 0
+    for _ in pairs(visibleNameplateTokens) do
+        nameplateCount = nameplateCount + 1
+    end
+    for _ in pairs(candidatesByUnitToken) do
+        candidateCount = candidateCount + 1
+    end
+    for _, watcher in pairs(watchersByGUID) do
+        if watcher.isTest then
+            testWatcherCount = testWatcherCount + 1
+        else
+            realWatcherCount = realWatcherCount + 1
+        end
+    end
+    return nameplateCount, candidateCount, realWatcherCount, testWatcherCount
+end
+
+function Scanner:GetWatcherStatusCounts()
+    local activeCount = 0
+    local inactiveCount = 0
+    local unknownCount = 0
+    for _, watcher in pairs(watchersByGUID) do
+        if watcher.observationStatus == self.STATUS_ACTIVE then
+            activeCount = activeCount + 1
+        elseif watcher.observationStatus == self.STATUS_INACTIVE then
+            inactiveCount = inactiveCount + 1
+        else
+            unknownCount = unknownCount + 1
+        end
+    end
+    return activeCount, inactiveCount, unknownCount
+end
+
 function Scanner:Shutdown()
     if scanTicker then
         scanTicker:Cancel()
@@ -460,18 +663,25 @@ function Scanner:Initialize()
         self:Shutdown()
     end
 
-    clearTable(visibleUnits)
+    clearTable(visibleNameplateTokens)
+    clearTable(candidatesByUnitToken)
     clearTable(guidByUnitToken)
     clearTable(unitTokenByGUID)
     clearTable(watchersByGUID)
     clearTable(sortedWatchers)
+    clearTable(seenNameplateTokens)
+    clearTable(stressGUIDs)
+    playerInWorld = false
     sortedListDirty = true
     dataChanged = true
 
     eventFrame:RegisterEvent("NAME_PLATE_UNIT_ADDED")
     eventFrame:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
     eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    eventFrame:RegisterEvent("PLAYER_LEAVING_WORLD")
     self:CaptureExistingNameplates()
+    nextIntegrityCheckAt = GetTime() + self.INTEGRITY_INTERVAL_SECONDS
+    nextExpiryCheckAt = GetTime() + self.EXPIRY_INTERVAL_SECONDS
 
     scanTicker = C_Timer.NewTicker(self.SCAN_INTERVAL_SECONDS, function()
         Scanner:Scan()
@@ -486,6 +696,11 @@ eventFrame:SetScript("OnEvent", function(_, event, unitToken)
     elseif event == "NAME_PLATE_UNIT_REMOVED" then
         Scanner:HandleNameplateRemoved(unitToken)
     elseif event == "PLAYER_ENTERING_WORLD" then
+        playerInWorld = true
         Scanner:CaptureExistingNameplates()
+        nextIntegrityCheckAt = GetTime() + Scanner.INTEGRITY_INTERVAL_SECONDS
+    elseif event == "PLAYER_LEAVING_WORLD" then
+        playerInWorld = false
+        Scanner:ClearVisibleNameplates()
     end
 end)
