@@ -22,6 +22,7 @@ $packageAllowlist = @(
     'UI.lua',
     'Scanner.lua',
     'TRP3.lua',
+    'Media/RPWatcherIcon.tga',
     'LICENSE',
     'README.md',
     'CHANGELOG.md',
@@ -109,6 +110,10 @@ try {
             throw "Allowlist-Datei fehlt beim Build: $relativePath"
         }
         $destinationPath = Join-Path $stagingRoot $relativePath
+        $destinationDirectory = Split-Path -Parent $destinationPath
+        if (-not (Test-Path -LiteralPath $destinationDirectory -PathType Container)) {
+            New-Item -ItemType Directory -Path $destinationDirectory -Force | Out-Null
+        }
         Copy-Item -LiteralPath $sourcePath -Destination $destinationPath
         (Get-Item -LiteralPath $destinationPath).LastWriteTimeUtc = $fixedTimestamp
     }
@@ -141,6 +146,11 @@ try {
     }
     if ($actualFiles | Where-Object { $_ -match '^RPWatcher/RPWatcher/' }) {
         throw 'ZIP enthält die unzulässige Doppelverschachtelung RPWatcher/RPWatcher.'
+    }
+
+    & $validatorPath -ExpectedVersion $version -PackagePath $zipPath
+    if (-not $?) {
+        throw 'Release-ZIP-Validierung fehlgeschlagen.'
     }
 
     $zipHash = (Get-FileHash -LiteralPath $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()

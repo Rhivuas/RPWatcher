@@ -25,6 +25,10 @@ Nur aktuell API-verfügbare sichtbare Nameplates können live geprüft werden. S
 - Unterstützt optional RP-Namen und Profilöffnung über Total RP 3.
 - Enthält nicht persistente Diagnose- und synthetische Belastungstests.
 
+## Projekt- und Addon-Icon
+
+RPWatcher besitzt ein eigenes originales Projekt- und Addon-Icon. World of Warcraft verwendet im Addon-Paket `Media/RPWatcherIcon.tga`. Für Projektseiten stehen unter `release/assets` bevorzugt die Varianten mit 1024 oder 512 Pixeln zur Verfügung; die 64-Pixel-Datei dient als Vorschau. Das Icon wird gemeinsam mit RPWatcher unter der MIT-Lizenz veröffentlicht.
+
 ## Voraussetzungen
 
 - World of Warcraft Retail mit Interface `120007` oder einer kompatiblen neueren Retail-Version.
@@ -139,4 +143,4 @@ Keine Accountdaten, GUIDs oder vollständigen RP-Profile veröffentlichen.
 
 RPWatcher ist freie Software unter der [MIT-Lizenz](LICENSE).
 
-Copyright 2026 Mercia. Autor: **Mercia**.
+Die MIT-Lizenz gilt auch für das originale RPWatcher-Icon. Copyright 2026 Mercia. Autor: **Mercia**.

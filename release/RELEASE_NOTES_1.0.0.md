@@ -15,6 +15,7 @@ RPWatcher 1.0.0 ist die erste stabile öffentliche Version des deutschsprachigen
 - automatische Ausblendung bei leerer Liste
 - virtualisierte Liste für größere Watchermengen
 - Performance-, Nameplate- und synthetische Belastungsdiagnose
+- eigenes RPWatcher-Addon- und Projekticon unter MIT
 
 ## Operative Härtung
 

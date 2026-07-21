@@ -6,6 +6,7 @@
 ## OptionalDeps: totalRP3
 ## SavedVariables: RPWatcherDB
 ## X-License: MIT
+## IconTexture: Interface\AddOns\RPWatcher\Media\RPWatcherIcon
 
 Core.lua
 Performance.lua

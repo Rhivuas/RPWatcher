@@ -17,3 +17,5 @@ RPWatcher ist kein offizielles Projekt von Blizzard Entertainment oder Total RP 
 ## RPWatcher-Lizenz
 
 RPWatcher wird unter der MIT-Lizenz veröffentlicht. Der vollständige Text befindet sich in `LICENSE`. Aus den genannten Drittanbieterbezügen werden keine zusätzlichen Lizenzen für RPWatcher abgeleitet oder erfunden.
+
+Das RPWatcher-Projekt- und Addon-Icon ist ein originales Projektasset. Es ist kein Blizzard-, World-of-Warcraft- oder Total-RP-3-Asset, enthält keine kopierten Logos oder Wortmarken und wird gemeinsam mit RPWatcher unter der MIT-Lizenz veröffentlicht. Dafür ist kein zusätzlicher Drittanbieter-Lizenzhinweis erforderlich.

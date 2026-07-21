@@ -13,6 +13,8 @@ Diese Anleitung gilt für RPWatcher 1.0.0 auf World of Warcraft Retail. Die Addo
 
 Total RP 3 ist optional. Für RP-Namen und die Profilöffnung muss es separat installiert und aktiviert sein.
 
+Das eigene RPWatcher-Icon kennzeichnet das Addon in unterstützten WoW-Addonansichten. Das Runtime-Asset liegt im Paket unter `Media/RPWatcherIcon.tga` und wird zusammen mit RPWatcher unter MIT veröffentlicht.
+
 ## Update von 0.9.0
 
 1. World of Warcraft vollständig beenden.

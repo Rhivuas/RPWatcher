@@ -7,6 +7,7 @@
 - Chat, BattleTags, Real IDs, Gildennachrichten und andere private UI-Elemente ausblenden oder zuschneiden.
 - Reale Charakternamen nur mit Zustimmung zeigen; andernfalls Testdaten verwenden oder Namen nachträglich anonymisieren.
 - Keine vollständigen privaten RP-Profile abbilden.
+- Für Projektseiten das originale RPWatcher-Icon bevorzugt aus `release/assets/RPWatcherIcon_1024.png` oder `release/assets/RPWatcherIcon_512.png` separat als Projektgrafik verwenden; nicht künstlich in Ingame-Screenshots montieren.
 
 ## 1. Leeres Hauptfenster
 

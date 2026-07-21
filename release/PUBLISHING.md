@@ -13,6 +13,14 @@ Dieses Dokument beschreibt die spätere Veröffentlichung der stabilen Version. 
 
 Immer das Allowlist-generierte Release-ZIP hochladen. Weder den vollständigen Repository-Download noch automatisch erzeugte Quellcode-Archive als WoW-Addon-Paket verwenden.
 
+## Projektgrafiken
+
+- Für große Projektgrafiken bevorzugt `release/assets/RPWatcherIcon_1024.png` verwenden.
+- Falls die Plattform eine kleinere Datei verlangt, `release/assets/RPWatcherIcon_512.png` verwenden.
+- `release/assets/RPWatcherIcon_64_preview.png` dient nur als kleine Vorschau.
+- Das Runtime-Icon `Media/RPWatcherIcon.tga` bleibt Bestandteil des Allowlist-ZIPs; die drei Projekt-PNGs werden nicht in das WoW-Addon-Paket aufgenommen.
+- Das Icon ist ein originales RPWatcher-Asset und wird gemeinsam mit dem Projekt unter MIT veröffentlicht.
+
 ## GitHub Releases
 
 1. Erst nach ausdrücklicher Freigabe ein öffentliches Repository beziehungsweise Remote einrichten.

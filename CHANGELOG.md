@@ -2,6 +2,7 @@
 
 ## 1.0.0
 
+- Eigenes RPWatcher-Addon- und Projekticon ergänzt.
 - Erste stabile öffentliche Version von RPWatcher vorbereitet.
 - Versions- und Veröffentlichungsdokumentation von 0.9.0 auf 1.0.0 finalisiert.
 - Finale Release Notes und vollständige Testmatrix für das exakte 1.0.0-Paket ergänzt.

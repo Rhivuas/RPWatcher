@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [ValidatePattern('^\d+\.\d+\.\d+$')]
-    [string]$ExpectedVersion = '1.0.0'
+    [string]$ExpectedVersion = '1.0.0',
+    [string]$PackagePath
 )
 
 Set-StrictMode -Version Latest
@@ -10,6 +11,13 @@ $ErrorActionPreference = 'Stop'
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $tocPath = Join-Path $projectRoot 'RPWatcher.toc'
 $errors = New-Object 'System.Collections.Generic.List[string]'
+$runtimeIconPath = 'Media/RPWatcherIcon.tga'
+$expectedIconTexture = 'Interface\AddOns\RPWatcher\Media\RPWatcherIcon'
+$projectAssetFiles = @(
+    'release/assets/RPWatcherIcon_1024.png',
+    'release/assets/RPWatcherIcon_512.png',
+    'release/assets/RPWatcherIcon_64_preview.png'
+)
 
 $packageAllowlist = @(
     'RPWatcher.toc',
@@ -20,6 +28,7 @@ $packageAllowlist = @(
     'UI.lua',
     'Scanner.lua',
     'TRP3.lua',
+    $runtimeIconPath,
     'LICENSE',
     'README.md',
     'CHANGELOG.md',
@@ -29,7 +38,7 @@ $packageAllowlist = @(
     'THIRD_PARTY_NOTICES.md'
 )
 
-$expectedProjectFiles = $packageAllowlist + @(
+$expectedProjectFiles = $packageAllowlist + $projectAssetFiles + @(
     '.gitignore',
     'AGENTS.md',
     'PERFORMANCE_AUDIT.md',
@@ -89,6 +98,7 @@ if (Test-Path -LiteralPath $tocPath -PathType Leaf) {
     $license = Get-TocValue -Lines $tocLines -Key 'X-License'
     $optionalDependencies = Get-TocValue -Lines $tocLines -Key 'OptionalDeps'
     $savedVariables = Get-TocValue -Lines $tocLines -Key 'SavedVariables'
+    $iconTexture = Get-TocValue -Lines $tocLines -Key 'IconTexture'
 
     if ([string]::IsNullOrWhiteSpace($tocVersion)) {
         Add-ValidationError 'Die TOC enthält keine Version.'
@@ -112,6 +122,9 @@ if (Test-Path -LiteralPath $tocPath -PathType Leaf) {
     }
     if ($savedVariables -cne 'RPWatcherDB') {
         Add-ValidationError "Unerwartete SavedVariables-Datenbank: '$savedVariables'."
+    }
+    if ($iconTexture -cne $expectedIconTexture) {
+        Add-ValidationError "Unerwarteter IconTexture-Pfad: '$iconTexture'. Erwartet: '$expectedIconTexture'."
     }
 
     $tocLuaFiles = @(
@@ -138,6 +151,70 @@ if (Test-Path -LiteralPath $tocPath -PathType Leaf) {
                 Add-ValidationError "Leere oder erfundene Plattform-ID in der TOC: $line"
             }
         }
+    }
+}
+
+$runtimeIconFullPath = Join-Path $projectRoot ($runtimeIconPath -replace '/', [System.IO.Path]::DirectorySeparatorChar)
+if (Test-Path -LiteralPath $runtimeIconFullPath -PathType Leaf) {
+    $iconBytes = [System.IO.File]::ReadAllBytes($runtimeIconFullPath)
+    if ($iconBytes.Length -lt 18) {
+        Add-ValidationError 'Das Runtime-Icon ist zu klein für einen gültigen TGA-Header.'
+    } else {
+        $imageType = $iconBytes[2]
+        $width = [BitConverter]::ToUInt16($iconBytes, 12)
+        $height = [BitConverter]::ToUInt16($iconBytes, 14)
+        $pixelDepth = $iconBytes[16]
+        $isPowerOfTwo = $width -gt 0 -and $height -gt 0 -and
+            (($width -band ($width - 1)) -eq 0) -and (($height -band ($height - 1)) -eq 0)
+
+        if ($imageType -notin @(2, 10)) {
+            Add-ValidationError "Das Runtime-Icon verwendet keinen unterstützten True-Color-TGA-Typ: $imageType."
+        }
+        if ($width -ne 256 -or $height -ne 256) {
+            Add-ValidationError "Das Runtime-Icon muss 256 x 256 Pixel groß sein: $width x $height."
+        }
+        if (-not $isPowerOfTwo) {
+            Add-ValidationError "Das Runtime-Icon besitzt keine Potenz-von-zwei-Auflösung: $width x $height."
+        }
+        if ($pixelDepth -notin @(24, 32)) {
+            Add-ValidationError "Das Runtime-Icon besitzt eine unerwartete Farbtiefe: $pixelDepth Bit."
+        }
+        if ($iconBytes.Length -le (18 + $iconBytes[0])) {
+            Add-ValidationError 'Das Runtime-Icon enthält keine Bilddaten.'
+        }
+    }
+}
+
+$expectedProjectAssetSizes = @{
+    'release/assets/RPWatcherIcon_1024.png' = 1024
+    'release/assets/RPWatcherIcon_512.png' = 512
+    'release/assets/RPWatcherIcon_64_preview.png' = 64
+}
+foreach ($assetPath in $projectAssetFiles) {
+    $assetFullPath = Join-Path $projectRoot ($assetPath -replace '/', [System.IO.Path]::DirectorySeparatorChar)
+    if (-not (Test-Path -LiteralPath $assetFullPath -PathType Leaf)) {
+        continue
+    }
+    $assetBytes = [System.IO.File]::ReadAllBytes($assetFullPath)
+    $pngSignature = [byte[]](137, 80, 78, 71, 13, 10, 26, 10)
+    $signatureValid = $assetBytes.Length -ge 24
+    if ($signatureValid) {
+        for ($index = 0; $index -lt $pngSignature.Length; $index++) {
+            if ($assetBytes[$index] -ne $pngSignature[$index]) {
+                $signatureValid = $false
+                break
+            }
+        }
+    }
+    if (-not $signatureValid) {
+        Add-ValidationError "Projektgrafik ist keine gültige PNG-Datei: $assetPath"
+        continue
+    }
+    $width = [BitConverter]::ToUInt32([byte[]]@($assetBytes[19], $assetBytes[18], $assetBytes[17], $assetBytes[16]), 0)
+    $height = [BitConverter]::ToUInt32([byte[]]@($assetBytes[23], $assetBytes[22], $assetBytes[21], $assetBytes[20]), 0)
+    $expectedSize = $expectedProjectAssetSizes[$assetPath]
+    if ($width -ne $expectedSize -or $height -ne $expectedSize) {
+        Add-ValidationError "Unerwartete Abmessungen der Projektgrafik $assetPath`: $width x $height."
     }
 }
 
@@ -169,6 +246,16 @@ foreach ($entry in $packageAllowlist) {
     }
 }
 
+$allowlistedImages = @($packageAllowlist | Where-Object { $_ -match '(?i)\.(tga|png|jpg|jpeg|gif|webp|blp)$' })
+if ($allowlistedImages.Count -ne 1 -or $allowlistedImages[0] -cne $runtimeIconPath) {
+    Add-ValidationError "Die Paket-Allowlist muss genau das Runtime-Icon enthalten: $($allowlistedImages -join ', ')"
+}
+foreach ($projectAsset in $projectAssetFiles) {
+    if ($packageAllowlist -contains $projectAsset) {
+        Add-ValidationError "Projektgrafik darf nicht in der Runtime-Allowlist stehen: $projectAsset"
+    }
+}
+
 $nestedAddonPath = Join-Path $projectRoot 'RPWatcher'
 if (Test-Path -LiteralPath $nestedAddonPath -PathType Container) {
     Add-ValidationError "Unzulässige Doppelverschachtelung gefunden: $nestedAddonPath"
@@ -186,7 +273,8 @@ foreach ($file in $runtimeJunk) {
 $excludedRoots = @('.git', '.agents', 'dist', 'release-output') | ForEach-Object {
     [System.IO.Path]::GetFullPath((Join-Path $projectRoot $_)).TrimEnd('\') + '\'
 }
-$unexpectedBinaryExtensions = @('.exe', '.dll', '.bin', '.dat', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.mp3', '.ogg', '.ttf', '.zip')
+$unexpectedBinaryExtensions = @('.exe', '.dll', '.bin', '.dat', '.tga', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.mp3', '.ogg', '.ttf', '.zip')
+$allowedBinaryFiles = @($runtimeIconPath) + $projectAssetFiles
 $credentialPatterns = @(
     'AKIA[0-9A-Z]{16}',
     'gh[pousr]_[A-Za-z0-9]{20,}',
@@ -198,6 +286,7 @@ $credentialPatterns = @(
 $textExtensions = @('.lua', '.toc', '.md', '.ps1', '.yml', '.yaml', '.txt', '.gitignore', '')
 foreach ($file in Get-ChildItem -LiteralPath $projectRoot -Recurse -File -Force) {
     $fullPath = [System.IO.Path]::GetFullPath($file.FullName)
+    $relativeFilePath = $fullPath.Substring($projectRoot.Length + 1).Replace('\', '/')
     $excluded = $false
     foreach ($excludedRoot in $excludedRoots) {
         if ($fullPath.StartsWith($excludedRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
@@ -210,7 +299,9 @@ foreach ($file in Get-ChildItem -LiteralPath $projectRoot -Recurse -File -Force)
     }
 
     if ($unexpectedBinaryExtensions -contains $file.Extension.ToLowerInvariant()) {
-        Add-ValidationError "Unerwartete Binär-/Archivdatei im Projekt: $($file.FullName.Substring($projectRoot.Length + 1))"
+        if ($allowedBinaryFiles -notcontains $relativeFilePath) {
+            Add-ValidationError "Unerwartete Binär-/Archivdatei im Projekt: $relativeFilePath"
+        }
         continue
     }
 
@@ -221,6 +312,57 @@ foreach ($file in Get-ChildItem -LiteralPath $projectRoot -Recurse -File -Force)
                 Add-ValidationError "Mögliches Zugangsdatenmuster in: $($file.FullName.Substring($projectRoot.Length + 1))"
                 break
             }
+        }
+    }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($PackagePath)) {
+    $resolvedPackagePath = if ([System.IO.Path]::IsPathRooted($PackagePath)) {
+        [System.IO.Path]::GetFullPath($PackagePath)
+    } else {
+        [System.IO.Path]::GetFullPath((Join-Path $projectRoot $PackagePath))
+    }
+
+    if (-not (Test-Path -LiteralPath $resolvedPackagePath -PathType Leaf)) {
+        Add-ValidationError "Zu prüfendes ZIP fehlt: $resolvedPackagePath"
+    } else {
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        $archive = [System.IO.Compression.ZipFile]::OpenRead($resolvedPackagePath)
+        try {
+            $actualFiles = @(
+                $archive.Entries |
+                    ForEach-Object { $_.FullName.Replace('\', '/') } |
+                    Where-Object { -not $_.EndsWith('/') } |
+                    Sort-Object
+            )
+        } finally {
+            $archive.Dispose()
+        }
+
+        $expectedFiles = @($packageAllowlist | ForEach-Object { "RPWatcher/$($_ -replace '\\', '/')" } | Sort-Object)
+        $differences = @(Compare-Object -ReferenceObject $expectedFiles -DifferenceObject $actualFiles)
+        if ($differences.Count -gt 0) {
+            $differenceText = ($differences | ForEach-Object { "$($_.SideIndicator) $($_.InputObject)" }) -join '; '
+            Add-ValidationError "ZIP-Inhalt weicht von der Allowlist ab: $differenceText"
+        }
+
+        $rootNames = @($actualFiles | ForEach-Object { ($_ -split '/')[0] } | Sort-Object -Unique)
+        if ($rootNames.Count -ne 1 -or $rootNames[0] -cne 'RPWatcher') {
+            Add-ValidationError "ZIP besitzt nicht exakt den Wurzelordner RPWatcher: $($rootNames -join ', ')"
+        }
+        if ($actualFiles | Where-Object { $_ -match '^RPWatcher/RPWatcher/' }) {
+            Add-ValidationError 'ZIP enthält die unzulässige Doppelverschachtelung RPWatcher/RPWatcher.'
+        }
+
+        $zipImages = @($actualFiles | Where-Object { $_ -match '(?i)\.(tga|png|jpg|jpeg|gif|webp|blp)$' })
+        if ($zipImages.Count -ne 1 -or $zipImages[0] -cne 'RPWatcher/Media/RPWatcherIcon.tga') {
+            Add-ValidationError "ZIP muss genau das Runtime-Icon enthalten: $($zipImages -join ', ')"
+        }
+        if ($actualFiles -notcontains 'RPWatcher/RPWatcher.toc') {
+            Add-ValidationError 'RPWatcher.toc liegt nicht direkt im ZIP-Wurzelordner RPWatcher.'
+        }
+        if ($actualFiles | Where-Object { $_ -match '^RPWatcher/release/assets/' -or $_ -match '(?i)\.png$' }) {
+            Add-ValidationError 'ZIP enthält unzulässige Projekt-PNGs oder release/assets-Dateien.'
         }
     }
 }
