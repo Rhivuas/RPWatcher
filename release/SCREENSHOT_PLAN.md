@@ -1,4 +1,4 @@
-# Screenshotplan für RPWatcher 0.9.0
+# Screenshotplan für RPWatcher 1.0.0
 
 ## Allgemeine Regeln
 

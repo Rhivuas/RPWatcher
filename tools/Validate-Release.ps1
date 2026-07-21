@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [ValidatePattern('^\d+\.\d+\.\d+$')]
-    [string]$ExpectedVersion = '0.9.0'
+    [string]$ExpectedVersion = '1.0.0'
 )
 
 Set-StrictMode -Version Latest
@@ -39,6 +39,8 @@ $expectedProjectFiles = $packageAllowlist + @(
     'release/SCREENSHOT_PLAN.md',
     'release/RELEASE_NOTES_0.9.0.md',
     'release/TEST_MATRIX_0.9.0.md',
+    'release/RELEASE_NOTES_1.0.0.md',
+    'release/TEST_MATRIX_1.0.0.md',
     'release/PUBLISHING.md',
     '.github/ISSUE_TEMPLATE/bug_report.yml',
     '.github/ISSUE_TEMPLATE/feature_request.yml',

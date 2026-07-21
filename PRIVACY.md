@@ -1,6 +1,6 @@
 # Datenschutz bei RPWatcher
 
-Stand: Version 0.9.0 Release Candidate
+Stand: Version 1.0.0
 
 RPWatcher ist ein lokal im World-of-Warcraft-Client ausgeführtes Addon.
 

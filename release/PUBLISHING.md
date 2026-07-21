@@ -1,44 +1,43 @@
-# Veröffentlichung von RPWatcher 0.9.0
+# Veröffentlichung von RPWatcher 1.0.0
 
-Dieses Dokument bereitet Veröffentlichungen vor. Es autorisiert keinen Upload. Für den aktuellen Release-Candidate-Auftrag werden kein Remote angelegt, keine Plattformprojekte erstellt, keine API-Schlüssel erzeugt und keine Dateien hochgeladen.
+Dieses Dokument beschreibt die spätere Veröffentlichung der stabilen Version. Es autorisiert in diesem Arbeitsauftrag keinen Upload, kein Remote und keine Erstellung von Plattformprojekten oder Zugangsdaten.
 
 ## Gemeinsame Vorbereitung
 
-1. `tools/Build-Release.ps1 -ExpectedVersion 0.9.0 -RequireCleanGit` aus einem sauberen committed Stand ausführen.
-2. `dist/RPWatcher-0.9.0.zip`, `.sha256` und Manifest prüfen.
-3. Das exakte ZIP anhand von `release/TEST_MATRIX_0.9.0.md` in WoW testen.
-4. Getestete SHA-256 dokumentieren.
-5. Release Candidate auf öffentlichen Plattformen als **Beta** beziehungsweise **Pre-Release** markieren.
-6. Erst nach Test des exakten Artefakts einen passenden Git-Tag erwägen.
-7. Version 1.0.0 später separat als **Stable** veröffentlichen.
+1. `tools/Build-Release.ps1 -ExpectedVersion 1.0.0 -RequireCleanGit` aus einem sauberen committed Stand ausführen.
+2. `dist/RPWatcher-1.0.0.zip`, `.sha256` und Manifest prüfen.
+3. Das exakte ZIP anhand von `release/TEST_MATRIX_1.0.0.md` in WoW testen.
+4. Den tatsächlich getesteten SHA-256 in der Testmatrix und im Freigabebericht dokumentieren.
+5. Erst nach erfolgreichem Test des exakten Artefakts den Git-Tag `v1.0.0` setzen.
+6. Version 1.0.0 auf öffentlichen Plattformen als **Stable/Release** kennzeichnen.
 
-Immer das Allowlist-generierte Release-ZIP hochladen. Nicht den vollständigen Repository-Download oder einen automatisch erzeugten Quellcode-Snapshot als WoW-Addon-Paket verwenden.
+Immer das Allowlist-generierte Release-ZIP hochladen. Weder den vollständigen Repository-Download noch automatisch erzeugte Quellcode-Archive als WoW-Addon-Paket verwenden.
 
 ## GitHub Releases
 
 1. Erst nach ausdrücklicher Freigabe ein öffentliches Repository beziehungsweise Remote einrichten.
-2. Release mit Titel `RPWatcher 0.9.0 Release Candidate` anlegen.
-3. Als **Pre-release** markieren.
-4. `release/RELEASE_NOTES_0.9.0.md` als Grundlage verwenden.
-5. `RPWatcher-0.9.0.zip` und optional die `.sha256` sowie Manifestdatei anhängen.
-6. Prüfen, dass der Download das eigene ZIP und nicht nur GitHubs Source-Code-Archive hervorhebt.
+2. Nach Artefakttest und Tagging ein Release mit Titel `RPWatcher 1.0.0` anlegen.
+3. Nicht als Pre-Release markieren.
+4. `release/RELEASE_NOTES_1.0.0.md` als Grundlage verwenden.
+5. `RPWatcher-1.0.0.zip` und optional `.sha256` sowie Manifest anhängen.
+6. Prüfen, dass das eigene ZIP hervorgehoben wird und nicht nur GitHubs Source-Code-Archive.
 
 ## CurseForge
 
-1. Projekt erst über die CurseForge-Oberfläche erstellen.
+1. Projekt über die CurseForge-Oberfläche erstellen.
 2. Keine Curse-Projekt-ID erfinden oder als Platzhalter in die TOC schreiben.
-3. Das eigene `RPWatcher-0.9.0.zip` hochladen.
-4. Release-Typ **Beta** wählen.
+3. Das eigene `RPWatcher-1.0.0.zip` hochladen.
+4. Release-Typ **Release** beziehungsweise **Stable** wählen.
 5. Retail-Kompatibilität und Interface-Version prüfen.
-6. Deutsche Projektbeschreibung verwenden; englische Beschreibung bei unterstützter Lokalisierung ergänzen.
+6. Deutsche Projektbeschreibung verwenden und die englische Beschreibung ergänzen, sofern die Plattform dies unterstützt.
 
-Eine echte `X-Curse-Project-ID` darf erst nach Erhalt einer realen ID und in einer eigenen geprüften Änderung ergänzt werden.
+Eine echte `X-Curse-Project-ID` darf erst nach Erhalt einer realen ID in einer eigenen geprüften Änderung ergänzt werden.
 
 ## Wago Addons
 
 1. Projekt über Wago Addons erstellen.
 2. Keine Wago-Projekt-ID erfinden.
-3. Das eigene `RPWatcher-0.9.0.zip` als Beta/Pre-Release hochladen.
+3. Das eigene `RPWatcher-1.0.0.zip` als stabile Version hochladen.
 4. Projektbeschreibung, Datenschutz und Supporthinweis übernehmen.
 5. Dateistruktur im Plattform-Preview prüfen.
 
@@ -47,5 +46,5 @@ Eine echte `X-Curse-Project-ID` darf erst nach Erhalt einer realen ID und in ein
 ## Zugangsdaten
 
 - Keine API-Schlüssel, Tokens, Cookies oder Passwörter in Dateien, Skripten, Git-Historie oder Issue-Templates speichern.
-- Plattformzugänge ausschließlich über die jeweiligen sicheren Benutzeroberflächen beziehungsweise später ausdrücklich autorisierte Secret-Stores verwenden.
+- Plattformzugänge ausschließlich über sichere Benutzeroberflächen beziehungsweise später ausdrücklich autorisierte Secret-Stores verwenden.
 - Diagnoselogs vor Veröffentlichung auf private Namen und Accountdaten prüfen.

@@ -1,5 +1,7 @@
 # RPWatcher – Kurzbeschreibungen
 
+Veröffentlichungsstand: RPWatcher 1.0.0, erste stabile öffentliche Version.
+
 Die Zeichenangaben sind Näherungswerte und können an plattformspezifische Grenzen angepasst werden, ohne neue Funktionsversprechen hinzuzufügen.
 
 ## Deutsch

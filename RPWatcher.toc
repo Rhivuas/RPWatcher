@@ -2,7 +2,7 @@
 ## Title: RPWatcher
 ## Notes: Zeigt freundliche Spieler mit sichtbaren Nameplates nach aktuellen oder früheren Target-Vorgängen; optionale Total-RP-3-Integration.
 ## Author: Mercia
-## Version: 0.9.0
+## Version: 1.0.0
 ## OptionalDeps: totalRP3
 ## SavedVariables: RPWatcherDB
 ## X-License: MIT

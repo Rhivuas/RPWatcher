@@ -4,7 +4,7 @@
 
 Total RP 3 ist eine optionale Integration von RPWatcher. Total RP 3 wird nicht mit RPWatcher ausgeliefert und muss bei Bedarf separat bezogen und aktiviert werden.
 
-Der Codeaudit für RPWatcher 0.9.0 bestätigt, dass RPWatcher keinen kopierten Total-RP-3-Quellcode enthält. Die Integration erfolgt über zur Laufzeit defensiv geprüfte Total-RP-3-API-Funktionen. Ein versionsabhängiger Profilöffnungs-Export wurde lokal gegen Total RP 3 3.3.7 verifiziert und ist vollständig in `TRP3.lua` gekapselt.
+Der Codeaudit für RPWatcher 1.0.0 bestätigt, dass RPWatcher keinen kopierten Total-RP-3-Quellcode enthält. Die Integration erfolgt über zur Laufzeit defensiv geprüfte Total-RP-3-API-Funktionen. Ein versionsabhängiger Profilöffnungs-Export wurde lokal gegen Total RP 3 3.3.7 verifiziert und ist vollständig in `TRP3.lua` gekapselt.
 
 ## Rechteinhaber und Projektstatus
 

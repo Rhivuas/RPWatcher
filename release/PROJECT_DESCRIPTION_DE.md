@@ -40,7 +40,7 @@ Keine Telemetrie, Werbung oder externen Dienste. Watcher, fremde GUIDs, RP-Namen
 
 ## Installation
 
-Den Ordner `RPWatcher` aus `RPWatcher-0.9.0.zip` nach `World of Warcraft\_retail_\Interface\AddOns\` kopieren und das Spiel neu starten. Freundliche Nameplates müssen für reale Erfassung aktiviert sein.
+Den Ordner `RPWatcher` aus `RPWatcher-1.0.0.zip` nach `World of Warcraft\_retail_\Interface\AddOns\` kopieren und das Spiel neu starten. Freundliche Nameplates müssen für reale Erfassung aktiviert sein.
 
 ## Support
 

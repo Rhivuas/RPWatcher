@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.0
+
+- Erste stabile öffentliche Version von RPWatcher vorbereitet.
+- Versions- und Veröffentlichungsdokumentation von 0.9.0 auf 1.0.0 finalisiert.
+- Finale Release Notes und vollständige Testmatrix für das exakte 1.0.0-Paket ergänzt.
+- Allowlist-basierter Paketbau, SHA-256 und Manifest für die stabile Veröffentlichung beibehalten.
+- Scanner-, Status-, Performance-, TRP3-, Settings- und UI-Kern unverändert aus dem vollständig getesteten Release Candidate übernommen.
+
 ## 0.9.0 – Release Candidate
 
 - Öffentliche Metadaten auf Autor Mercia, MIT-Lizenz und Version 0.9.0 vereinheitlicht.

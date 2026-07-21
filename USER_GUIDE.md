@@ -1,17 +1,26 @@
 # RPWatcher – Benutzeranleitung
 
-Diese Anleitung gilt für RPWatcher 0.9.0 Release Candidate auf World of Warcraft Retail. Die Addon-Oberfläche ist deutschsprachig.
+Diese Anleitung gilt für RPWatcher 1.0.0 auf World of Warcraft Retail. Die Addon-Oberfläche ist deutschsprachig.
 
 ## Installation
 
 1. World of Warcraft vollständig beenden.
-2. `RPWatcher-0.9.0.zip` entpacken.
+2. `RPWatcher-1.0.0.zip` entpacken.
 3. Den enthaltenen Ordner `RPWatcher` nach `World of Warcraft\_retail_\Interface\AddOns\` kopieren.
 4. Die Struktur prüfen: `...\AddOns\RPWatcher\RPWatcher.toc` muss direkt vorhanden sein.
 5. Spiel starten und RPWatcher in der Addon-Liste aktivieren.
 6. Freundliche Nameplates in den WoW-Einstellungen aktivieren.
 
 Total RP 3 ist optional. Für RP-Namen und die Profilöffnung muss es separat installiert und aktiviert sein.
+
+## Update von 0.9.0
+
+1. World of Warcraft vollständig beenden.
+2. Den vorhandenen Ordner `Interface\AddOns\RPWatcher` durch den Ordner aus `RPWatcher-1.0.0.zip` ersetzen.
+3. Die SavedVariables beibehalten, wenn Fenster- und Benutzereinstellungen erhalten bleiben sollen.
+4. Spiel starten und in der Addon-Liste Version 1.0.0 prüfen.
+
+Das Datenbankschema bleibt unverändert. Fremde Watcher-, GUID-, RP-Namen- und Profildaten werden grundsätzlich nicht dauerhaft gespeichert.
 
 ## Erster Start
 

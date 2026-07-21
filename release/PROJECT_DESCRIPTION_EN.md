@@ -40,7 +40,7 @@ No telemetry, advertising, or external services. Watchers, other players’ GUID
 
 ## Installation
 
-Copy the `RPWatcher` folder from `RPWatcher-0.9.0.zip` into `World of Warcraft\_retail_\Interface\AddOns\`, then restart the game. Friendly nameplates must be enabled for real-player detection.
+Copy the `RPWatcher` folder from `RPWatcher-1.0.0.zip` into `World of Warcraft\_retail_\Interface\AddOns\`, then restart the game. Friendly nameplates must be enabled for real-player detection.
 
 ## Support
 
