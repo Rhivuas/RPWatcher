@@ -53,3 +53,15 @@ RPWatcher besaß einen 30-Sekunden-Cooldown pro GUID, rief `TRP3_API.r.sendQuery
 - UI-Zeilen auf den sichtbaren Ausschnitt virtualisieren und verborgene Listen erst beim Anzeigen formatieren.
 - Direkte RPWatcher-Profilanfragen mit höchstens einer Anfrage pro Sekunde über den bestehenden Scanner abarbeiten.
 - Diagnose standardmäßig deaktiviert halten; im deaktivierten Scannerpfad bleibt nur eine boolesche Abfrage pro Tick.
+
+## Korrektur 5.1: Nameplate-Tokenauflösung
+
+Der erste Phase-5-Stand las Frames aus `C_NamePlate.GetNamePlates()` ausschließlich über `nameplate.namePlateUnitToken`. In einem reproduzierten Lauf waren aus Benutzersicht mindestens 14 freundliche Spieler-Nameplates sichtbar; nach 2 Minuten 33 Sekunden meldete die Diagnose jedoch nur einen verwalteten Token, einen Kandidaten und 77 Kandidatenprüfungen bei 587 Scans. Die leere Watcherliste war ohne beobachtenden Spieler möglich, die geringe Kandidatenmenge dagegen nicht plausibel.
+
+Ursache war der Fünf-Sekunden-Integritätsabgleich: Frames ohne gültiges `namePlateUnitToken` wurden nicht in `seenNameplateTokens` eingetragen. Dadurch entfernte der Abgleich zuvor über `NAME_PLATE_UNIT_ADDED` korrekt erfasste Tokens als vermeintlich verschwunden.
+
+Die lokale Prüfung erfolgte gegen den installierten Retail-Client `12.0.7.68453` mit Interface `120007`. Die Blizzard-UI liegt dort nicht als lose Quellkopie vor; die aktuelle `GetUnit`-Methode ist im Client vorhanden und wird deshalb zusätzlich für jedes konkrete Frame auf Existenz geprüft und gezielt geschützt aufgerufen.
+
+Die Auflösung ist nun zentral gekapselt. Aktuelle Blizzard-Nameplate-Frames werden zuerst defensiv über `nameplate:GetUnit()` ausgewertet; `namePlateUnitToken` bleibt ausschließlich als älterer Fallback. Das unbestätigte Feld `unitToken` wird nicht verwendet. Initialisierung, `PLAYER_ENTERING_WORLD` und der seltene Integritätsabgleich verwenden dieselbe Funktion. Ereignisse verwenden weiterhin direkt ihren gelieferten Unit-Token.
+
+Der Performancebericht bezeichnet `visibleNameplateTokens` nicht mehr pauschal als „Nameplates“. Eine nur beim ausdrücklichen Bericht erzeugte Momentaufnahme trennt rohe API-Frames, aufgelöste Tokens, verwaltete Tokens, freundliche Kandidaten sowie echte und synthetische Watcher. `/rpw plates` ergänzt dazu Tokenwege und Ablehnungsgründe, ohne Scannerzustand, Target-Status, TRP3 oder SavedVariables zu verändern.

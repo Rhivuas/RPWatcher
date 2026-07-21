@@ -19,6 +19,8 @@ Beim Ereignis `NAME_PLATE_UNIT_ADDED` prüft RPWatcher einmalig gültige Unit, S
 
 Der Target-Token wird nicht bei jedem Scan neu zusammengesetzt. Alle fünf Sekunden gleicht derselbe bestehende Ticker die aktuellen Frames aus `C_NamePlate.GetNamePlates()` vollständig ab. Dadurch werden verpasste Ereignisse, geänderte statische Eigenschaften und wiederverwendete Tokens korrigiert, ohne einen weiteren Timer anzulegen. Die Entfernung unbekannter Watcher wird innerhalb desselben Ticketers einmal pro Sekunde geprüft.
 
+Die Tokenauflösung für diese Frames ist zentral gekapselt. Sie verwendet zuerst die aktuelle Nameplate-Frame-Methode `GetUnit()` und greift nur defensiv auf das ältere Feld `namePlateUnitToken` zurück. Das unbestätigte Feld `unitToken` wird nicht verwendet. Der ursprüngliche Phase-5-Abgleich las ausschließlich `namePlateUnitToken`; lieferte dieses Feld keinen Token, entfernte der nächste Fünf-Sekunden-Abgleich zuvor korrekt per Ereignis erfasste Kandidaten fälschlich wieder. Der reproduzierte Bericht mit mindestens 14 sichtbaren freundlichen Nameplates, aber nur einem verwalteten Token und 77 Kandidatenprüfungen in 587 Scans war die Folge dieses Fehlers.
+
 `PLAYER_LEAVING_WORLD` entfernt temporäre Nameplate- und GUID-Zuordnungen und setzt betroffene echte Watcher auf Unbekannt, ohne ihre Laufzeithistorie sofort zu löschen. `PLAYER_ENTERING_WORLD` liest vorhandene Nameplates erneut ein. Der Hotpath vor Phase 5 und die technischen Gründe sind in `PERFORMANCE_AUDIT.md` dokumentiert.
 
 ## Performance-Diagnose
@@ -33,7 +35,9 @@ Die Diagnose ist standardmäßig ausgeschaltet und wird niemals gespeichert. Im 
 /rpw perf report
 ```
 
-Erfasst werden Scananzahl, gesamte, durchschnittliche und maximale Scanzeit, geprüfte Kandidaten, aktuelle Nameplates und Kandidaten, echte und synthetische Watcher, Statuswechsel, erzeugte und entfernte echte Watcher, UI-Daten- und Zeitaktualisierungen sowie versendete und gedrosselte TRP3-Anfragen. `/rpw perf on` beginnt immer mit leeren Messwerten; `/rpw perf off` behält den letzten Bericht im Arbeitsspeicher.
+Erfasst werden Scananzahl, gesamte, durchschnittliche und maximale Scanzeit, geprüfte Kandidaten, echte und synthetische Watcher, Statuswechsel, erzeugte und entfernte echte Watcher, UI-Daten- und Zeitaktualisierungen sowie versendete und gedrosselte TRP3-Anfragen. Beim ausdrücklichen Bericht wird zusätzlich eine aktuelle, nicht gespeicherte Momentaufnahme erstellt. Sie unterscheidet rohe Frames aus `C_NamePlate.GetNamePlates()`, Frames mit auflösbarem Token, intern verwaltete sichtbare Tokens und qualifizierte freundliche Kandidaten. `/rpw perf on` beginnt immer mit leeren Messwerten; `/rpw perf off` behält den letzten Bericht im Arbeitsspeicher.
+
+`/rpw plates` gibt dieselben Nameplate-Grundmengen detaillierter aus, einschließlich Tokenweg und Ablehnungsgründen. Der Befehl liest ausschließlich den momentanen API- und Scannerzustand: Er erzeugt weder Watcher noch Kandidaten, verändert keinen Target-Status, sendet keine TRP3-Anfrage und speichert nichts. Kandidaten sind sichtbare, für den Target-Scan qualifizierte freundliche Spieler. Im Fenster sichtbare Watcher sind dagegen nur Kandidaten, die den Benutzer mindestens einmal im Target hatten; eine leere Watcherliste bei vielen Kandidaten kann deshalb korrekt sein.
 
 ## Synthetischer Belastungstest
 
@@ -125,6 +129,7 @@ Die Interface-Nummer `120007` stammt aus `F:\World of Warcraft\_retail_\Interfac
 - `/rpw unlock` – Fenster entsperren und Zustand speichern.
 - `/rpw reset` – Position, Größe, Skalierung, Transparenz und Sperrstatus zurücksetzen.
 - `/rpw perf [on|off|reset|report]` – nicht persistente Laufzeitdiagnose steuern.
+- `/rpw plates` – reine Momentaufnahme der Nameplate-Auflösung und Ablehnungsgründe ausgeben.
 - `/rpw stress 25|50|100|200` – synthetische Lastdaten erzeugen.
 - `/rpw stress clear` – ausschließlich synthetische Stressdaten entfernen.
 
@@ -220,6 +225,17 @@ Unbekannte Argumente zeigen die Hilfe an.
    ```
 
 8. Prüfen, dass der zweite Bericht erhalten bleibt. `/reload` muss die Diagnose wieder ausgeschaltet und die Werte verworfen haben.
+
+### Nameplate-Abgleich nach Korrektur 5.1
+
+1. An einem Ort mit vielen sichtbaren freundlichen Spieler-Nameplates `/rpw plates` ausführen.
+2. `Rohe Frames` muss ungefähr der tatsächlich sichtbaren Nameplate-Menge entsprechen. `Token aufgelöst` sollte im Normalfall gleich hoch sein; der Tokenweg sollte überwiegend oder vollständig `GetUnit()` melden.
+3. `Verwaltete Tokens` muss den aufgelösten aktuellen Tokens entsprechen. `Verwaltete Kandidaten` darf wegen NPCs, Gegnern, dem eigenen Spieler oder fehlenden Unit-Daten kleiner sein.
+4. Fünfzehn Sekunden warten, sodass mindestens drei Integritätsabgleiche stattgefunden haben, und `/rpw plates` erneut ausführen. Weiterhin sichtbare Kandidaten dürfen nicht verschwinden.
+5. `/rpw perf on` starten, mindestens 30 Sekunden warten und `/rpw perf report` ausgeben. Bei beispielsweise 10 stabilen Kandidaten müssen ungefähr 40 Kandidatenprüfungen pro Sekunde anfallen; eine dauerhaft nur einstellige Kandidatenzahl trotz vieler freundlicher Spieler-Nameplates ist zu melden.
+6. Eine Nameplate aus der Reichweite verschwinden lassen und nach mehr als fünf Sekunden `/rpw plates` ausführen. Der wirklich verschwundene Token darf nicht mehr verwaltet werden.
+7. `/reload` mit bereits sichtbaren Nameplates ausführen. Direkt danach muss `/rpw plates` die vorhandenen Frames und Tokens wieder melden.
+8. Einen freundlichen Spieler den Benutzer anwählen lassen. Erst dann darf aus dem Kandidaten ein sichtbarer grüner Watcher werden; ohne Target-Vorgang bleibt die Watcherliste leer.
 
 ### Synthetische UI-Last
 

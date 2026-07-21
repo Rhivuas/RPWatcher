@@ -40,6 +40,7 @@ function Core:PrintHelp()
     print("  /rpw unlock - Fenster entsperren")
     print("  /rpw reset - Position und Fensterdarstellung zurücksetzen")
     print("  /rpw perf [on|off|reset|report] - Laufzeitdiagnose steuern")
+    print("  /rpw plates - aktuelle Nameplate-Mengen diagnostizieren")
     print("  /rpw stress <25|50|100|200|clear> - synthetische Lastdaten verwalten")
 end
 
@@ -95,6 +96,10 @@ function Core:HandleSlashCommand(message)
     elseif command == "perf" or command:match("^perf%s+") then
         if RPWatcher.Performance then
             RPWatcher.Performance:HandleCommand(command:match("^perf%s*(.*)$") or "")
+        end
+    elseif command == "plates" then
+        if RPWatcher.Scanner and RPWatcher.Scanner.PrintNameplateDiagnostics then
+            RPWatcher.Scanner:PrintNameplateDiagnostics()
         end
     elseif command == "stress" or command:match("^stress%s+") then
         local argument = command:match("^stress%s*(.*)$") or ""

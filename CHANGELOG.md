@@ -2,6 +2,10 @@
 
 ## 0.5.0
 
+- Nameplate-Integritätsabgleich korrigiert: aktuelle Frames werden primär über die lokal verifizierte `GetUnit()`-Methode aufgelöst.
+- `namePlateUnitToken` nur noch als defensiven Fallback verwendet; kein unbestätigtes `unitToken`-Feld eingeführt.
+- Performancebericht in rohe Frames, aufgelöste Tokens, verwaltete Tokens, Kandidaten und Watcher präzisiert.
+- Read-only-Diagnose `/rpw plates` mit Tokenwegen und kompakten Ablehnungsgründen ergänzt.
 - Freundliche Spieler-Nameplates beim Hinzufügen statisch validiert und als schnelle Kandidaten zwischengespeichert.
 - Dauerhaften Target-Scan auf GUID-Integrität und Target-Prüfung reduziert.
 - Seltenen vollständigen Nameplate-Abgleich im bestehenden Scanner-Ticker ergänzt.

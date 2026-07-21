@@ -35,6 +35,8 @@
 - Stress-Testdaten dürfen keine Unit- oder TRP3-API mit künstlichen Identitäten aufrufen.
 - Performance-Messwerte dürfen nicht in SavedVariables gespeichert werden.
 - Optimierungen dürfen die funktionalen Statusregeln nicht verändern.
+- Nameplate-Frames werden ausschließlich über eine zentral gekapselte und lokal verifizierte Tokenauflösung verarbeitet.
+- Diagnoseberichte unterscheiden rohe API-Frames, verwaltete Tokens, Kandidaten und Watcher.
 - Keine externe Bibliothek ohne ausdrückliche Freigabe.
 - Nach jeder Phase ist eine manuelle Ingame-Testanleitung erforderlich.
 - Codex kann WoW nicht selbst vollständig testen; die Ingame-Tests übernimmt der Benutzer.

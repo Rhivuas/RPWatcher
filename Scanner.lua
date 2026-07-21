@@ -98,6 +98,37 @@ local function isValidUnitToken(unitToken)
     return type(unitToken) == "string" and unitToken ~= ""
 end
 
+-- Current Blizzard nameplate frames expose GetUnit(). The legacy field remains
+-- a defensive fallback for compatible third-party or older nameplate frames.
+local function getUnitTokenFromNameplate(nameplate)
+    if not nameplate then
+        return nil, nil
+    end
+
+    local getUnit = nameplate.GetUnit
+    if type(getUnit) == "function" then
+        local ok, unitToken = pcall(getUnit, nameplate)
+        if ok and isValidUnitToken(unitToken) then
+            return unitToken, "GetUnit"
+        end
+    end
+
+    local legacyUnitToken = nameplate.namePlateUnitToken
+    if isValidUnitToken(legacyUnitToken) then
+        return legacyUnitToken, "namePlateUnitToken"
+    end
+
+    return nil, nil
+end
+
+local function countEntries(target)
+    local count = 0
+    for _ in pairs(target) do
+        count = count + 1
+    end
+    return count
+end
+
 local function getQualifiedUnit(unitToken)
     if not isValidUnitToken(unitToken) or not UnitExists(unitToken) then
         return nil, nil
@@ -374,7 +405,7 @@ function Scanner:CaptureExistingNameplates(now, suppressNotification)
     clearTable(seenNameplateTokens)
     for index = 1, #nameplates do
         local nameplate = nameplates[index]
-        local unitToken = nameplate and nameplate.namePlateUnitToken
+        local unitToken = getUnitTokenFromNameplate(nameplate)
         if isValidUnitToken(unitToken) then
             seenNameplateTokens[unitToken] = true
             self:HandleNameplateAdded(unitToken, now, true)
@@ -613,16 +644,10 @@ function Scanner:AddStressData(count)
 end
 
 function Scanner:GetRuntimeCounts()
-    local nameplateCount = 0
-    local candidateCount = 0
+    local managedTokenCount = countEntries(visibleNameplateTokens)
+    local candidateCount = countEntries(candidatesByUnitToken)
     local realWatcherCount = 0
     local testWatcherCount = 0
-    for _ in pairs(visibleNameplateTokens) do
-        nameplateCount = nameplateCount + 1
-    end
-    for _ in pairs(candidatesByUnitToken) do
-        candidateCount = candidateCount + 1
-    end
     for _, watcher in pairs(watchersByGUID) do
         if watcher.isTest then
             testWatcherCount = testWatcherCount + 1
@@ -630,7 +655,110 @@ function Scanner:GetRuntimeCounts()
             realWatcherCount = realWatcherCount + 1
         end
     end
-    return nameplateCount, candidateCount, realWatcherCount, testWatcherCount
+    return managedTokenCount, candidateCount, realWatcherCount, testWatcherCount
+end
+
+function Scanner:GetNameplateDiagnosticSnapshot()
+    local snapshot = {
+        rawFrameCount = 0,
+        resolvedTokenCount = 0,
+        getUnitTokenCount = 0,
+        fallbackTokenCount = 0,
+        existingUnitCount = 0,
+        playerUnitCount = 0,
+        friendlyUnitCount = 0,
+        ownPlayerCount = 0,
+        missingTokenCount = 0,
+        missingUnitCount = 0,
+        nonPlayerCount = 0,
+        nonFriendlyCount = 0,
+        missingGUIDCount = 0,
+        missingNameCount = 0,
+        qualifiedUnitCount = 0,
+        managedTokenCount = countEntries(visibleNameplateTokens),
+        candidateCount = countEntries(candidatesByUnitToken),
+        realWatcherCount = 0,
+        testWatcherCount = 0,
+    }
+
+    local nameplates = C_NamePlate.GetNamePlates()
+    snapshot.rawFrameCount = #nameplates
+    for index = 1, #nameplates do
+        local unitToken, resolutionSource = getUnitTokenFromNameplate(nameplates[index])
+        if not unitToken then
+            snapshot.missingTokenCount = snapshot.missingTokenCount + 1
+        else
+            snapshot.resolvedTokenCount = snapshot.resolvedTokenCount + 1
+            if resolutionSource == "GetUnit" then
+                snapshot.getUnitTokenCount = snapshot.getUnitTokenCount + 1
+            else
+                snapshot.fallbackTokenCount = snapshot.fallbackTokenCount + 1
+            end
+
+            if not UnitExists(unitToken) then
+                snapshot.missingUnitCount = snapshot.missingUnitCount + 1
+            else
+                snapshot.existingUnitCount = snapshot.existingUnitCount + 1
+                if not UnitIsPlayer(unitToken) then
+                    snapshot.nonPlayerCount = snapshot.nonPlayerCount + 1
+                else
+                    snapshot.playerUnitCount = snapshot.playerUnitCount + 1
+                    if not UnitIsFriend("player", unitToken) then
+                        snapshot.nonFriendlyCount = snapshot.nonFriendlyCount + 1
+                    else
+                        snapshot.friendlyUnitCount = snapshot.friendlyUnitCount + 1
+                        if UnitIsUnit(unitToken, "player") then
+                            snapshot.ownPlayerCount = snapshot.ownPlayerCount + 1
+                        else
+                            local guid = UnitGUID(unitToken)
+                            if type(guid) ~= "string" or guid == "" then
+                                snapshot.missingGUIDCount = snapshot.missingGUIDCount + 1
+                            else
+                                local fullName = GetUnitName(unitToken, true)
+                                if type(fullName) ~= "string" or fullName == "" then
+                                    snapshot.missingNameCount = snapshot.missingNameCount + 1
+                                else
+                                    snapshot.qualifiedUnitCount = snapshot.qualifiedUnitCount + 1
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    for _, watcher in pairs(watchersByGUID) do
+        if watcher.isTest then
+            snapshot.testWatcherCount = snapshot.testWatcherCount + 1
+        else
+            snapshot.realWatcherCount = snapshot.realWatcherCount + 1
+        end
+    end
+    return snapshot
+end
+
+function Scanner:PrintNameplateDiagnostics()
+    local snapshot = self:GetNameplateDiagnosticSnapshot()
+    print("|cff66ccffRPWatcher Nameplate-Diagnose|r")
+    print(("  Rohe Frames: %d · Token aufgelöst: %d"):format(snapshot.rawFrameCount, snapshot.resolvedTokenCount))
+    print(("  Tokenweg: GetUnit() %d · namePlateUnitToken-Fallback %d"):format(snapshot.getUnitTokenCount, snapshot.fallbackTokenCount))
+    print(("  Existierende Units: %d · Spieler: %d · Freundlich: %d"):format(snapshot.existingUnitCount, snapshot.playerUnitCount, snapshot.friendlyUnitCount))
+    print(("  Eigener Spieler: %d · Fehlende GUID: %d · Fehlender Name: %d"):format(snapshot.ownPlayerCount, snapshot.missingGUIDCount, snapshot.missingNameCount))
+    print(("  Verwaltete Tokens: %d · Qualifizierbare Units: %d · Verwaltete Kandidaten: %d"):format(
+        snapshot.managedTokenCount,
+        snapshot.qualifiedUnitCount,
+        snapshot.candidateCount
+    ))
+    print(("  Ablehnungen: kein Token %d · Unit fehlt %d · kein Spieler %d · nicht freundlich %d · eigener Spieler %d · GUID fehlt %d · Name fehlt %d"):format(
+        snapshot.missingTokenCount,
+        snapshot.missingUnitCount,
+        snapshot.nonPlayerCount,
+        snapshot.nonFriendlyCount,
+        snapshot.ownPlayerCount,
+        snapshot.missingGUIDCount,
+        snapshot.missingNameCount
+    ))
 end
 
 function Scanner:GetWatcherStatusCounts()

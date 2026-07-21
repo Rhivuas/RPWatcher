@@ -156,9 +156,16 @@ function Performance:PrintHelp()
 end
 
 function Performance:PrintReport()
-    local nameplates, candidates, realWatchers, testWatchers = 0, 0, 0, 0
-    if RPWatcher.Scanner and RPWatcher.Scanner.GetRuntimeCounts then
-        nameplates, candidates, realWatchers, testWatchers = RPWatcher.Scanner:GetRuntimeCounts()
+    local rawFrames, resolvedTokens, managedTokens, candidates = 0, 0, 0, 0
+    local realWatchers, testWatchers = 0, 0
+    if RPWatcher.Scanner and RPWatcher.Scanner.GetNameplateDiagnosticSnapshot then
+        local snapshot = RPWatcher.Scanner:GetNameplateDiagnosticSnapshot()
+        rawFrames = snapshot.rawFrameCount
+        resolvedTokens = snapshot.resolvedTokenCount
+        managedTokens = snapshot.managedTokenCount
+        candidates = snapshot.candidateCount
+        realWatchers = snapshot.realWatcherCount
+        testWatchers = snapshot.testWatcherCount
     end
 
     local average = metrics.scanCount > 0 and metrics.totalScanMilliseconds / metrics.scanCount or 0
@@ -166,7 +173,8 @@ function Performance:PrintReport()
     print("  Messung: " .. (enabled and "an" or "aus") .. " · Dauer: " .. formatDuration(self:GetDuration()))
     print(("  Scans: %d · Kandidaten geprüft: %d"):format(metrics.scanCount, metrics.candidatesChecked))
     print(("  Scanzeit gesamt: %.3f ms · Ø: %.3f ms · Maximum: %.3f ms"):format(metrics.totalScanMilliseconds, average, metrics.maximumScanMilliseconds))
-    print(("  Nameplates: %d · Kandidaten: %d"):format(nameplates, candidates))
+    print(("  Rohe Nameplate-Frames: %d · Tokens aufgelöst: %d"):format(rawFrames, resolvedTokens))
+    print(("  Verwaltete Tokens: %d · Freundliche Kandidaten: %d"):format(managedTokens, candidates))
     print(("  Watcher: %d echt · %d Test/Stress"):format(realWatchers, testWatchers))
     print(("  Statuswechsel: %d · erzeugt: %d · entfernt: %d"):format(metrics.statusChanges, metrics.watchersCreated, metrics.watchersRemoved))
     print(("  UI-Aktualisierungen: %d Daten · %d Zeit"):format(metrics.uiDataUpdates, metrics.uiTimeUpdates))
