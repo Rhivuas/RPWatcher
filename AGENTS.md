@@ -44,6 +44,14 @@
 - Verborgene Fenster führen keine vollständige Zeilenformatierung aus.
 - Neue Texturen, Atlanten und Templates müssen lokal verifiziert werden.
 - Scanner- und TRP3-Kernlogik bleiben nach der operativen Härtung eingefroren.
+- Öffentliche Pakete werden ausschließlich über eine feste Allowlist gebaut.
+- Release-ZIPs dürfen keine Entwicklungsdateien enthalten.
+- Tags werden erst nach dem Test des exakten ZIP-Artefakts gesetzt.
+- Die in einem Testbericht angegebene SHA-256 muss zum getesteten ZIP gehören.
+- Plattform-IDs dürfen niemals erfunden werden.
+- API-Schlüssel und Zugangsdaten dürfen niemals im Repository gespeichert werden.
+- Die MIT-Lizenzdatei bleibt Bestandteil jedes öffentlichen Pakets.
+- Release-Audits führen keine neuen Funktionen ein.
 - Keine externe Bibliothek ohne ausdrückliche Freigabe.
 - Nach jeder Phase ist eine manuelle Ingame-Testanleitung erforderlich.
 - Codex kann WoW nicht selbst vollständig testen; die Ingame-Tests übernimmt der Benutzer.

@@ -1,0 +1,48 @@
+name: Funktionsvorschlag
+description: Eine zukünftige, phasenweise Erweiterung vorschlagen
+title: "[Feature] "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        RPWatcher priorisiert klare Statusregeln, geringe Laufzeitkosten und Datenschutz. Bitte keine privaten Charakter- oder Profildaten einfügen.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Welches Problem soll gelöst werden?
+      description: Beschreibe den aktuellen RP-/Gameplay-Ablauf ohne die Lösung vorwegzunehmen.
+    validations:
+      required: true
+  - type: textarea
+    id: desired
+    attributes:
+      label: Gewünschtes Verhalten
+      description: Wie sollte RPWatcher sich aus Nutzersicht verhalten?
+    validations:
+      required: true
+  - type: textarea
+    id: use-case
+    attributes:
+      label: RP-/Gameplay-Anwendungsfall
+      description: Wo und wie würde die Funktion eingesetzt?
+    validations:
+      required: true
+  - type: textarea
+    id: performance
+    attributes:
+      label: Mögliche Performanceauswirkungen
+      description: Zusätzliche Scans, Timer, UI-Zeilen oder Großereignislast berücksichtigen.
+  - type: textarea
+    id: privacy
+    attributes:
+      label: Mögliche Datenschutzfolgen
+      description: Welche Daten würden gelesen, angezeigt, übertragen oder gespeichert?
+  - type: checkboxes
+    id: boundaries
+    attributes:
+      label: Projektgrenzen
+      options:
+        - label: Der Vorschlag benötigt keine erfundene WoW-/TRP3-API und keine privaten Beispieldaten.
+          required: true

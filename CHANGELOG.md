@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.9.0 – Release Candidate
+
+- Öffentliche Metadaten auf Autor Mercia, MIT-Lizenz und Version 0.9.0 vereinheitlicht.
+- Vollständige MIT-Lizenzdatei und öffentliche Benutzer-, Datenschutz-, Support- und Drittanbieter-Dokumentation ergänzt.
+- Deutsche und englische Projektseitentexte, Kurzbeschreibungen, Screenshotplan, Release Notes und Testmatrix vorbereitet.
+- GitHub-Issue-Templates für Fehlerberichte und Funktionsvorschläge ergänzt.
+- Reproduzierbare PowerShell-Validierung und Allowlist-basierten Paketbau hinzugefügt.
+- Release-ZIP wird mit genau einem Ordner `RPWatcher`, SHA-256-Datei und Inhaltsmanifest erzeugt.
+- Finales Lebenszyklus-, Scanner-, TRP3-, UI-, Sicherheits- und Datenschutz-Audit ohne funktionalen Releaseblocker abgeschlossen.
+- Scanner-, Status-, Performance-, TRP3-, Settings- und UI-Kern unverändert aus dem getesteten Stand 0.6.0 übernommen.
+
 ## 0.6.0
 
 - Zentrales, WoW-/TRP3-nahes Farbsystem und wiederverwendbare Darstellungshilfen in `Theme.lua` ergänzt.

@@ -1,8 +1,9 @@
 .agents/
 *.zip
+*.sha256
 *.log
 *.tmp
 Thumbs.db
 .DS_Store
-release/
 dist/
+release-output/
