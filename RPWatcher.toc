@@ -1,0 +1,12 @@
+## Interface: 120007
+## Title: RPWatcher
+## Notes: Zeigt freundliche Spieler an, die den eigenen Charakter beobachten.
+## Version: 0.4.0
+## SavedVariables: RPWatcherDB
+## OptionalDeps: totalRP3
+
+Core.lua
+Settings.lua
+UI.lua
+Scanner.lua
+TRP3.lua

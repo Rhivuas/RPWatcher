@@ -1,0 +1,32 @@
+# RPWatcher – dauerhafte Entwicklungsregeln
+
+- Das Addon heißt **RPWatcher**.
+- Zielplattform ist **World of Warcraft Retail**.
+- Programmiersprache ist **Lua**.
+- Total RP 3 ist optional.
+- Keine WoW- oder TRP3-API darf erfunden werden.
+- Neue Funktionen werden phasenweise implementiert.
+- Bestehende funktionierende Funktionen dürfen nicht grundlos umgeschrieben werden.
+- Spieler werden über GUIDs verwaltet.
+- Es werden ausschließlich freundliche Spieler mit sichtbaren Nameplates erfasst.
+- Keine ungebremsten `OnUpdate`-Schleifen.
+- Es gibt höchstens einen zentralen, gedrosselten Scanner-Ticker.
+- Laufzeit-Watcher gehören dem Scanner-Modul und werden nicht in SavedVariables gespeichert.
+- UI und Scanner greifen nur über öffentliche Modulschnittstellen aufeinander zu.
+- Beim Entfernen einer Nameplate wird die zuvor gespeicherte Unit-Token-zu-GUID-Zuordnung verwendet.
+- TRP3-Zugriffe sind vollständig in `TRP3.lua` gekapselt.
+- Der normale WoW-Name wird nie durch den RP-Namen ersetzt.
+- RP-Namen sind nicht persistente Anzeigedaten.
+- Profilabfragen dürfen nur für echte Watcher erfolgen.
+- Profilabfragen müssen pro Spieler gedrosselt werden.
+- Testdaten dürfen niemals TRP3-Kommunikation auslösen.
+- Bei undokumentierten Integrationspunkten ist die lokal installierte aktuelle TRP3-Implementierung maßgeblich.
+- Settings und Standardwerte werden in `Settings.lua` gekapselt.
+- Änderungen am SavedVariables-Schema benötigen eine dokumentierte Migration.
+- Manuell gewünschte Sichtbarkeit und vorübergehende Auto-Ausblendung sind getrennte Zustände.
+- Änderungen an Fenster und Anzeige dürfen Watcher-Laufzeitdaten nicht beeinflussen.
+- Das Scanner-Intervall darf nicht als Benutzeroption freigegeben werden.
+- Keine Einstellung darf einen zusätzlichen dauerhaften Scanner erzeugen.
+- Keine externe Bibliothek ohne ausdrückliche Freigabe.
+- Nach jeder Phase ist eine manuelle Ingame-Testanleitung erforderlich.
+- Codex kann WoW nicht selbst vollständig testen; die Ingame-Tests übernimmt der Benutzer.
