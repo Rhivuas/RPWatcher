@@ -37,6 +37,13 @@
 - Optimierungen dürfen die funktionalen Statusregeln nicht verändern.
 - Nameplate-Frames werden ausschließlich über eine zentral gekapselte und lokal verifizierte Tokenauflösung verarbeitet.
 - Diagnoseberichte unterscheiden rohe API-Frames, verwaltete Tokens, Kandidaten und Watcher.
+- Das visuelle System wird zentral definiert.
+- Farben dürfen nie die einzige Statusinformation sein.
+- UI-Überarbeitungen dürfen keine zusätzlichen dauerhaften Timer oder `OnUpdate`-Schleifen erzeugen.
+- Die Listenvirtualisierung muss erhalten bleiben.
+- Verborgene Fenster führen keine vollständige Zeilenformatierung aus.
+- Neue Texturen, Atlanten und Templates müssen lokal verifiziert werden.
+- Scanner- und TRP3-Kernlogik bleiben nach der operativen Härtung eingefroren.
 - Keine externe Bibliothek ohne ausdrückliche Freigabe.
 - Nach jeder Phase ist eine manuelle Ingame-Testanleitung erforderlich.
 - Codex kann WoW nicht selbst vollständig testen; die Ingame-Tests übernimmt der Benutzer.

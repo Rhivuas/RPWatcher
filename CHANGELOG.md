@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.6.0
+
+- Zentrales, WoW-/TRP3-nahes Farbsystem und wiederverwendbare Darstellungshilfen in `Theme.lua` ergänzt.
+- Hauptfenster mit abgesetzter Titelleiste, Statusbereich, klaren Trennlinien und dezentem Sperrindikator überarbeitet.
+- Zugängliche Statusübersicht aus Symbol, Text, Farbe und Zähler eingeführt.
+- Virtualisierte Watcher-Zeilen mit statusabhängigen Flächen, alternierender Leseführung und ereignisbasiertem Hoverzustand gestaltet.
+- RP-/WoW-Namen, Statuszeiten und kompakte `Profil`-Buttons responsiv neu angeordnet.
+- Namenstooltips um verständliche Statussätze ergänzt; interne GUIDs und Unit-Tokens bleiben verborgen.
+- Erklärenden leeren Zustand sowie Tooltip für den Resize-Griff ergänzt.
+- Einstellungsseite in Fenster, Verhalten und Total RP 3 gegliedert und mit kurzen Hilfetexten versehen.
+- Synthetische Stressdaten um kurze, mittlere und sehr lange RP-Anzeigenamen für Layouttests ergänzt.
+- Scanner-, Performance-, TRP3-, Speicher- und Virtualisierungslogik funktional unverändert beibehalten.
+
 ## 0.5.0
 
 - Nameplate-Integritätsabgleich korrigiert: aktuelle Frames werden primär über die lokal verifizierte `GetUnit()`-Methode aufgelöst.

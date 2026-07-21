@@ -3,6 +3,9 @@ local _, RPWatcher = ...
 local SettingsModule = {}
 RPWatcher.Settings = SettingsModule
 
+local Theme = RPWatcher.Theme
+local colors = Theme.colors
+
 SettingsModule.SCHEMA_VERSION = 2
 
 local MIN_WIDTH = 320
@@ -111,7 +114,7 @@ local function createCheckbox(parent, label, x, y, onClick)
     checkbox:SetPoint("TOPLEFT", x, y)
     checkbox:SetSize(26, 26)
 
-    local text = checkbox:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    local text = checkbox:CreateFontString(nil, "OVERLAY", Theme.fonts.body)
     text:SetPoint("LEFT", checkbox, "RIGHT", 4, 0)
     text:SetText(label)
     checkbox.label = text
@@ -120,11 +123,11 @@ local function createCheckbox(parent, label, x, y, onClick)
 end
 
 local function createSlider(parent, frameName, label, x, y, minimum, maximum, step, onValueChanged)
-    local labelText = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    local labelText = parent:CreateFontString(nil, "OVERLAY", Theme.fonts.label)
     labelText:SetPoint("TOPLEFT", x, y)
     labelText:SetText(label)
 
-    local valueText = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    local valueText = parent:CreateFontString(nil, "OVERLAY", Theme.fonts.secondary)
     valueText:SetPoint("LEFT", labelText, "RIGHT", 8, 0)
 
     local slider = CreateFrame("Slider", frameName, parent, "OptionsSliderTemplate")
@@ -139,6 +142,27 @@ local function createSlider(parent, frameName, label, x, y, minimum, maximum, st
     _G[frameName .. "High"]:SetText(("%.2f"):format(maximum))
     _G[frameName .. "Text"]:SetText("")
     return slider
+end
+
+local function createSectionHeader(parent, label, y)
+    local header = parent:CreateFontString(nil, "OVERLAY", Theme.fonts.title)
+    header:SetPoint("TOPLEFT", 24, y)
+    header:SetText(label)
+    Theme:SetFontColor(header, colors.accent)
+
+    local divider = Theme:CreateColorTexture(parent, "ARTWORK", colors.divider)
+    divider:SetPoint("LEFT", header, "RIGHT", 12, 0)
+    divider:SetPoint("RIGHT", parent, "RIGHT", -30, 0)
+    divider:SetHeight(1)
+    return header
+end
+
+local function createHint(parent, text, x, y)
+    local hint = parent:CreateFontString(nil, "OVERLAY", Theme.fonts.muted)
+    hint:SetPoint("TOPLEFT", x, y)
+    hint:SetText(text)
+    Theme:SetFontColor(hint, colors.secondaryText)
+    return hint
 end
 
 local function refreshOptionsPanel()
@@ -166,21 +190,25 @@ local function registerOptionsPanel()
     optionsPanel = CreateFrame("Frame", nil, UIParent)
     optionsPanel.name = "RPWatcher"
 
-    local title = optionsPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
-    title:SetPoint("TOPLEFT", 24, -24)
+    local title = optionsPanel:CreateFontString(nil, "OVERLAY", Theme.fonts.display)
+    title:SetPoint("TOPLEFT", 24, -20)
     title:SetText("RPWatcher")
+    Theme:SetFontColor(title, colors.text)
 
-    local description = optionsPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    description:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -10)
-    description:SetText("Fenster und Darstellung konfigurieren.")
+    local description = optionsPanel:CreateFontString(nil, "OVERLAY", Theme.fonts.body)
+    description:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -7)
+    description:SetText("Passe Fenster, Anzeigeverhalten und die optionale Total-RP-3-Schaltfläche an.")
+    Theme:SetFontColor(description, colors.secondaryText)
 
-    panelControls.locked = createCheckbox(optionsPanel, "Fenster sperren", 20, -82, function(self)
+    createSectionHeader(optionsPanel, "Fenster", -82)
+
+    panelControls.locked = createCheckbox(optionsPanel, "Fenster sperren", 20, -106, function(self)
         if not refreshingPanel then
             SettingsModule:SetWindowLocked(self:GetChecked())
         end
     end)
 
-    panelControls.scale = createSlider(optionsPanel, "RPWatcherWindowScaleSlider", "Fensterskalierung", 24, -132, 0.80, 1.30, 0.05, function(self, value)
+    panelControls.scale = createSlider(optionsPanel, "RPWatcherWindowScaleSlider", "Fensterskalierung", 24, -151, 0.80, 1.30, 0.05, function(self, value)
         value = roundToStep(value, 0.05)
         self.valueText:SetText(("%.2f"):format(value))
         if not refreshingPanel then
@@ -188,7 +216,7 @@ local function registerOptionsPanel()
         end
     end)
 
-    panelControls.alpha = createSlider(optionsPanel, "RPWatcherBackgroundAlphaSlider", "Hintergrundtransparenz", 24, -205, 0.50, 1.00, 0.05, function(self, value)
+    panelControls.alpha = createSlider(optionsPanel, "RPWatcherBackgroundAlphaSlider", "Hintergrundtransparenz", 24, -219, 0.50, 1.00, 0.05, function(self, value)
         value = roundToStep(value, 0.05)
         self.valueText:SetText(("%d %%"):format(math.floor(value * 100 + 0.5)))
         if not refreshingPanel then
@@ -196,8 +224,22 @@ local function registerOptionsPanel()
         end
     end)
 
-    local retentionLabel = optionsPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    retentionLabel:SetPoint("TOPLEFT", 24, -278)
+    panelControls.reset = CreateFrame("Button", nil, optionsPanel, "UIPanelButtonTemplate")
+    panelControls.reset:SetPoint("TOPLEFT", 24, -287)
+    panelControls.reset:SetSize(180, 26)
+    panelControls.reset:SetText("Fenster zurücksetzen")
+    panelControls.reset:SetScript("OnClick", function()
+        SettingsModule:ResetWindowSettings()
+        refreshOptionsPanel()
+        print("|cff66ccffRPWatcher|r: Fensterposition und Darstellung wurden zurückgesetzt.")
+    end)
+
+    createHint(optionsPanel, "Setzt Position, Größe, Skalierung, Transparenz und Sperrstatus zurück.", 24, -320)
+
+    createSectionHeader(optionsPanel, "Verhalten", -354)
+
+    local retentionLabel = optionsPanel:CreateFontString(nil, "OVERLAY", Theme.fonts.label)
+    retentionLabel:SetPoint("TOPLEFT", 24, -382)
     retentionLabel:SetText("Unbekannte Watcher behalten")
 
     panelControls.retention = CreateFrame("Button", nil, optionsPanel, "UIPanelButtonTemplate")
@@ -216,35 +258,26 @@ local function registerOptionsPanel()
         refreshOptionsPanel()
     end)
 
-    local retentionHint = optionsPanel:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    local retentionHint = optionsPanel:CreateFontString(nil, "OVERLAY", Theme.fonts.muted)
     retentionHint:SetPoint("LEFT", panelControls.retention, "RIGHT", 10, 0)
-    retentionHint:SetText("Klicken, um 15 / 30 / 60 / 120 / 300 Sekunden zu wählen.")
+    retentionHint:SetText("15 / 30 / 60 / 120 / 300 Sekunden")
+    Theme:SetFontColor(retentionHint, colors.secondaryText)
 
-    panelControls.autoHide = createCheckbox(optionsPanel, "Fenster ausblenden, wenn die Liste leer ist", 20, -351, function(self)
+    panelControls.autoHide = createCheckbox(optionsPanel, "Fenster ausblenden, wenn die Liste leer ist", 20, -438, function(self)
         if not refreshingPanel then
             SettingsModule:SetAutoHideEnabled(self:GetChecked())
         end
     end)
 
-    panelControls.profileButton = createCheckbox(optionsPanel, "TRP3-Profilbutton anzeigen", 20, -391, function(self)
+    createSectionHeader(optionsPanel, "Total RP 3", -480)
+
+    panelControls.profileButton = createCheckbox(optionsPanel, "TRP3-Profilbutton anzeigen", 20, -505, function(self)
         if not refreshingPanel then
             SettingsModule:SetProfileButtonEnabled(self:GetChecked())
         end
     end)
 
-    panelControls.reset = CreateFrame("Button", nil, optionsPanel, "UIPanelButtonTemplate")
-    panelControls.reset:SetPoint("TOPLEFT", 24, -447)
-    panelControls.reset:SetSize(180, 26)
-    panelControls.reset:SetText("Fenster zurücksetzen")
-    panelControls.reset:SetScript("OnClick", function()
-        SettingsModule:ResetWindowSettings()
-        refreshOptionsPanel()
-        print("|cff66ccffRPWatcher|r: Fensterposition und Darstellung wurden zurückgesetzt.")
-    end)
-
-    local resetHint = optionsPanel:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    resetHint:SetPoint("TOPLEFT", panelControls.reset, "BOTTOMLEFT", 0, -6)
-    resetHint:SetText("Watcher, Sichtbarkeit, Auto-Ausblendung, Aufbewahrung und Profilbutton bleiben erhalten.")
+    createHint(optionsPanel, "RP-Namen und Profilabfragen funktionieren unabhängig von dieser Anzeigeoption.", 54, -534)
 
     optionsPanel:SetScript("OnShow", refreshOptionsPanel)
 

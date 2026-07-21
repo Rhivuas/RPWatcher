@@ -36,6 +36,11 @@ local TEST_GUID_ACTIVE = "RPWATCHER-TEST-ACTIVE"
 local TEST_GUID_INACTIVE = "RPWATCHER-TEST-INACTIVE"
 local TEST_GUID_UNKNOWN = "RPWATCHER-TEST-UNKNOWN"
 local STRESS_GUID_PREFIX = "RPWATCHER-STRESS-"
+local STRESS_RP_NAME_PATTERNS = {
+    "Bo %03d",
+    "Mira Silberhain %03d",
+    "Lady Aveline von den Nebelgärten zu Sturmwind %03d",
+}
 
 local STATUS_ORDER = {
     [Scanner.STATUS_ACTIVE] = 1,
@@ -624,6 +629,7 @@ function Scanner:AddStressData(count)
         watchersByGUID[guid] = {
             guid = guid,
             name = ("[Stress] Spieler %03d"):format(index),
+            rpName = string.format(STRESS_RP_NAME_PATTERNS[((index - 1) % #STRESS_RP_NAME_PATTERNS) + 1], index),
             unitToken = nil,
             isVisible = status ~= self.STATUS_UNKNOWN,
             observationStatus = status,

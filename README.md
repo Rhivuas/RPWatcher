@@ -4,11 +4,21 @@ RPWatcher ist ein World-of-Warcraft-Retail-Addon. Es erkennt freundliche Spieler
 
 ## Entwicklungsstand
 
-Version 0.5.0 implementiert Phase 5 zur operativen Härtung für stark besuchte RP-Orte und Großereignisse. Die getesteten Status-, Fenster-, Settings- und TRP3-Funktionen bleiben erhalten. Der zentrale Target-Scanner läuft weiterhin alle 0,25 Sekunden; es gibt weder einen zweiten dauerhaften RPWatcher-Ticker noch eine `OnUpdate`-Schleife.
+Version 0.6.0 überarbeitet die Benutzeroberfläche mit einer ruhigen, WoW- und TRP3-nahen visuellen Hierarchie. Die operative Härtung aus Version 0.5.0 sowie sämtliche Status-, Scanner-, Settings- und TRP3-Funktionen bleiben erhalten. Der zentrale Target-Scanner läuft weiterhin alle 0,25 Sekunden; es gibt weder einen zweiten dauerhaften RPWatcher-Ticker noch eine `OnUpdate`-Schleife.
 
 Ein Spieler erscheint erst, nachdem er den eigenen Charakter mindestens einmal im Target hatte. Berücksichtigt werden ausschließlich gültige Nameplate-Unit-Tokens freundlicher Spielercharaktere ungleich dem eigenen Spieler.
 
 Watcher, RP-Namen, Profilinformationen und TRP3-Abfragezustände sind reine Laufzeitdaten. `RPWatcherDB` speichert ausschließlich Addon-, Fenster- und Anzeigeeinstellungen.
+
+## Überarbeitete Benutzeroberfläche
+
+Das visuelle System ist in `Theme.lua` zentral definiert. Dunkle, klar getrennte Hintergrundflächen, ein zurückhaltender Goldakzent, ein sichtbarer Außenrahmen und abgestufte Textfarben orientieren sich an aktuellen WoW-Dialogen und Total RP 3 3.3.7. RPWatcher verwendet dafür ausschließlich lokal bestätigte Blizzard-Standardressourcen und einfache Farbflächen; Total RP 3 bleibt optional.
+
+Die Oberfläche gliedert sich in Titelleiste, Statusübersicht und virtualisierte Watcherliste. Jeder Status ist durch Farbe, Symbol und Text erkennbar: `● … aktuell`, `● … vorher` und `? … unbekannt`. Aktive Zeilen sind dezent hervorgehoben, abwechselnde Zeilenflächen und ein ereignisbasierter Hoverzustand verbessern die Orientierung. Der Hauptname bleibt die hellste Information, Zeittext und kompakter `Profil`-Button sind optisch nachgeordnet. Lange Namen werden abgeschnitten und vollständig im Tooltip gezeigt.
+
+Die Namenstooltips nennen RP- und WoW-Namen, den verständlich formulierten Watcherstatus sowie bei Bedarf die fehlende TRP3-Verfügbarkeit. Sie enthalten keine GUIDs oder Unit-Tokens. Der leere Zustand erklärt zusätzlich, dass Spieler erst nach einem Target-Vorgang erscheinen. Bei gesperrtem Fenster zeigt die Titelleiste einen dezenten Indikator; der Resize-Griff besitzt im entsperrten Zustand einen Tooltip.
+
+Die Einstellungsseite ist ohne neue Optionen in **Fenster**, **Verhalten** und **Total RP 3** gegliedert. Das Datenbankschema bleibt unverändert bei `schemaVersion = 2`.
 
 ## Optimierte Scannerarchitektur
 
@@ -41,7 +51,7 @@ Erfasst werden Scananzahl, gesamte, durchschnittliche und maximale Scanzeit, gep
 
 ## Synthetischer Belastungstest
 
-`/rpw stress 25`, `50`, `100` oder `200` ersetzt ausschließlich zuvor erzeugte Stressdaten durch die gewünschte Menge. Die Einträge werden deterministisch auf Grün, Grau und Unbekannt verteilt. Sie verwenden reservierte interne Testschlüssel, keine Unit-Tokens und keine echten GUIDs. Sie lösen weder Unit- noch TRP3-Aufrufe aus, besitzen keinen Profilbutton und werden nicht gespeichert.
+`/rpw stress 25`, `50`, `100` oder `200` ersetzt ausschließlich zuvor erzeugte Stressdaten durch die gewünschte Menge. Die Einträge werden deterministisch auf Grün, Grau und Unbekannt verteilt und verwenden kurze, mittlere sowie sehr lange synthetische RP-Anzeigenamen zur Layoutprüfung. Sie verwenden reservierte interne Testschlüssel, keine Unit-Tokens und keine echten GUIDs. Sie lösen weder Unit- noch TRP3-Aufrufe aus, besitzen keinen Profilbutton und werden nicht gespeichert.
 
 Unbekannte Stress-Einträge bleiben absichtlich bis zum nächsten Stress-Befehl oder Clear erhalten, damit auch längere UI-Tests mit einer kurzen realen Aufbewahrungszeit möglich sind. `/rpw stress clear` entfernt nur Stressdaten. Echte Watcher und die drei normalen `/rpw test`-Einträge bleiben unangetastet. `/rpw clear` entfernt weiterhin sämtliche Laufzeitdaten.
 
@@ -49,7 +59,7 @@ Unbekannte Stress-Einträge bleiben absichtlich bis zum nächsten Stress-Befehl 
 
 - **Grün / Aktuell:** sichtbare Nameplate und aktuelles Target auf dem Benutzer; Anzeige `seit …`.
 - **Grau / Vorher:** sichtbare Nameplate, aber Target wurde gewechselt; Anzeige `zuletzt vor …`.
-- **Unbekannt:** Nameplate ist nicht mehr sichtbar; Anzeige `nicht mehr sichtbar · vor …`.
+- **Unbekannt:** Nameplate ist nicht mehr sichtbar; Anzeige `nicht sichtbar · …`.
 
 Die Statuszeile im Fenster zeigt `Aktuell`, `Vorher` und `Unbekannt`. Die drei mit `/rpw test` erzeugten Testeinträge werden in diesen sichtbaren Zählern mitgezählt.
 
@@ -64,7 +74,7 @@ Die Kategorie **RPWatcher** ist unter **Optionen > AddOns** registriert und kann
 - **Hintergrundtransparenz:** 50 bis 100 Prozent; Texte und Bedienelemente behalten ihre Lesbarkeit.
 - **Unbekannte Watcher behalten:** schaltet zyklisch durch 15, 30, 60, 120 und 300 Sekunden.
 - **Fenster ausblenden, wenn die Liste leer ist:** blendet nur vorübergehend aus.
-- **TRP3-Profilbutton anzeigen:** verbirgt oder zeigt `[Profil]`, ohne RP-Namen oder Profilanfragen zu beeinflussen.
+- **TRP3-Profilbutton anzeigen:** verbirgt oder zeigt den kompakten Button `Profil`, ohne RP-Namen oder Profilanfragen zu beeinflussen.
 - **Fenster zurücksetzen:** setzt ausschließlich Position, Größe, Skalierung, Transparenz und Sperrstatus zurück.
 
 Das entsperrte Fenster lässt sich am Griff unten rechts zwischen 320 × 170 und 750 × 700 Pixeln skalieren. Größe, Position, Skalierung, Transparenz und Sperrstatus bleiben nach `/reload` erhalten. Der Listenbereich passt sich an und verwendet weiterhin wiederverwendete Scrollzeilen.
@@ -179,8 +189,8 @@ Unbekannte Argumente zeigen die Hilfe an.
 
 ### TRP3-Profilbutton und Regression
 
-1. Total RP 3 aktivieren und einen echten Watcher mit RP-Profil erfassen. RP-Name und `[Profil]` müssen wie in Version 0.3.0 funktionieren.
-2. **TRP3-Profilbutton anzeigen** deaktivieren. `[Profil]` muss sofort verschwinden; RP-Name und spätere TRP3-Aktualisierungen müssen weiter funktionieren.
+1. Total RP 3 aktivieren und einen echten Watcher mit RP-Profil erfassen. RP-Name und Profilöffnung müssen weiterhin funktionieren.
+2. **TRP3-Profilbutton anzeigen** deaktivieren. Der Button `Profil` muss sofort verschwinden; RP-Name und spätere TRP3-Aktualisierungen müssen weiter funktionieren.
 3. Die Option wieder aktivieren. Der Button muss bei verfügbarem Total RP 3 zurückkehren.
 4. Total RP 3 deaktivieren und neu laden. Mit aktivierter Profilbutton-Einstellung darf kein Button und kein Lua-Fehler entstehen.
 5. Prüfen, dass Gegner, NPCs, der eigene Spieler und freundliche Spieler ohne früheren Target-Vorgang nicht erscheinen.
@@ -280,6 +290,39 @@ Bitte jeweils den vollständigen Chattext von `/rpw perf report` für folgende S
 - `/rpw stress 200` mit mehrmaligem vollständigem Scrollen.
 
 Zusätzlich hilfreich sind Ort, ungefähre sichtbare Nameplate-Anzahl, Messdauer, aktiviertes/deaktiviertes TRP3, beobachtete Ruckler und eventuelle BugSack-Meldungen. Es werden keine GUIDs oder Profile benötigt.
+
+## Manuelle visuelle Ingame-Testanleitung für Phase 6
+
+### Grundlayout und leerer Zustand
+
+1. RPWatcher 0.6.0 mit BugSack starten und `/reload` ausführen. Position, Größe, Skalierung, Transparenz, Sperrstatus und manuelle Sichtbarkeit aus 0.5.0 müssen erhalten bleiben.
+2. `/rpw clear` und danach `/rpw` ausführen. Bei deaktivierter Auto-Ausblendung müssen das zentrierte Fragezeichen, `Keine beobachtenden Spieler erfasst.` und der Hilfetext vollständig lesbar sein.
+3. Titelleiste, Goldtrennlinie, Statusleiste, Listenrahmen, Schließen-Button und Resize-Griff bei 50, 90 und 100 Prozent Hintergrundtransparenz prüfen. Texte und Bedienelemente dürfen nicht mit ausgeblendet werden.
+4. Das Fenster über den Schließen-Button schließen und mit `/rpw` wieder öffnen. Der Button muss weiterhin ausschließlich die manuelle Sichtbarkeit ändern.
+
+### Statuszeilen, Tooltips und Profilbutton
+
+1. `/rpw test` ausführen. Die Statusübersicht muss je einen aktuellen, vorherigen und unbekannten Eintrag melden; alle drei Zustände müssen durch Symbol, Text und Farbe unterscheidbar sein.
+2. Namen nacheinander überfahren. Die Tooltips müssen Anzeigename, technischen WoW-Namen, passenden Statussatz und gegebenenfalls die TRP3-Verfügbarkeit zeigen, aber keine GUID oder Unit-Token.
+3. Mit einem echten Watcher und aktivem Total RP 3 RP-Namen, WoW-Namen im Tooltip, den kompakten `Profil`-Button, dessen Hoverzustand und `TRP3-Profil öffnen` prüfen. Der Klick darf das Target nicht ändern.
+4. **TRP3-Profilbutton anzeigen** deaktivieren. Der Button muss sofort verschwinden; RP-Name, Callback-Aktualisierung und Profilanfragen bleiben unverändert aktiv.
+5. Total RP 3 deaktivieren und neu laden. RPWatcher muss fehlerfrei auf den WoW-Namen zurückfallen, den Profilbutton verbergen und im Namenstooltip auf die fehlende Verfügbarkeit hinweisen.
+
+### Responsive Größen und Sperrstatus
+
+1. Das entsperrte Fenster auf ungefähr 320 × 170, 430 × 260 und 750 × 700 Pixel bringen. Statuszähler, Namen, Zeittexte, Profilbutton und Scrollleiste dürfen sich nicht überdecken.
+2. Skalierung 0,80, 1,00 und 1,30 prüfen. Position und gespeicherte Größe müssen `/reload` überstehen.
+3. `/rpw lock` ausführen. `Gesperrt` muss dezent in der Titelleiste erscheinen; Verschieben und Größenänderung müssen blockiert und der Resize-Griff verborgen sein.
+4. `/rpw unlock` ausführen. Indikator verschwindet, Resize-Griff erscheint wieder und zeigt beim Überfahren `Fenstergröße ändern`.
+5. `/rpw options` öffnen. Gruppierung, Beschreibungen, Regler, Checkboxen, Aufbewahrungsbutton und Reset bei verschiedenen UI-Skalierungen prüfen. Alle Optionen müssen funktional identisch zu 0.5.0 bleiben.
+
+### Virtualisierung und Belastung
+
+1. `/rpw stress 25`, anschließend `/rpw stress 100` und `/rpw stress 200` ausführen. Kurze, mittlere und sehr lange synthetische Anzeigenamen müssen sichtbar variieren; lange Namen werden abgeschnitten und im Tooltip vollständig gezeigt.
+2. Mit 200 Einträgen schnell bis zum Ende und zurück scrollen, das Fenster mehrmals skalieren und den Profilbutton ein- und ausblenden. Keine Zeile darf falsche Daten, einen aktiven Test-Profilbutton oder einen hängenden Hoverzustand zeigen.
+3. `/rpw perf on` starten, mehrfach scrollen, das Fenster verbergen, mindestens 30 Sekunden warten, wieder anzeigen und `/rpw perf report` ausführen. Scanner- und Diagnosedaten müssen weiterlaufen; beim Wiederanzeigen müssen die Zeiten sofort stimmen.
+4. Auto-Ausblendung aktivieren, `/rpw stress clear`, `/rpw clear` und danach `/rpw stress 25` ausführen. Das nur automatisch verborgene Fenster muss bei neuen Einträgen erscheinen; ein zuvor manuell geschlossenes Fenster bleibt verborgen.
+5. Abschließend `/rpw plates`, `/rpw perf report`, `/rpw stress clear` und `/rpw clear` prüfen. BugSack darf keine neue Meldung enthalten.
 
 ## Bekannte Einschränkungen und Risiken
 
