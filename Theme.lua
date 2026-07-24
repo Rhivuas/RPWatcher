@@ -134,7 +134,7 @@ end
 -- rotated texture.
 local function buildArrowIndicator(parent, size)
     local arrow = CreateFrame("Frame", nil, parent)
-    arrow:SetSize(size, size)
+    arrow:SetAllPoints(parent)
     arrow.bars = {}
 
     local rowHeight = size / ARROW_ROW_COUNT
