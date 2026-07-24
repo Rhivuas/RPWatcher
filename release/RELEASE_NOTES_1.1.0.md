@@ -13,7 +13,7 @@ RPWatcher 1.1.0 ist ein begrenztes UI-/UX-Verbesserungspaket auf Basis der erste
 
 ## Unverändert
 
-Nameplate-Erfassung, zentrale Tokenauflösung, Target-Erkennung, der 0,25-Sekunden-Scanner, der Fünf-Sekunden-Integritätsabgleich, GUID-basierte Watcher, die Grün-/Grau-/Unbekannt-Statuslogik, Aufbewahrungslogik, Zonenwechselbehandlung, UI-Virtualisierung, Performance-Diagnose, Stress-Testdaten, TRP3-Anfrage-Cooldown und globale Drosselung, sowie sämtliche Datenschutzprinzipien bleiben unverändert. Es gibt weiterhin genau einen dauerhaften Scanner-Ticker und keine `OnUpdate`-Schleifen.
+Nameplate-Erfassung, zentrale Tokenauflösung, Target-Erkennung, der 0,25-Sekunden-Scanner, der Fünf-Sekunden-Integritätsabgleich, GUID-basierte Watcher, die Grün-/Grau-/Unbekannt-Statuslogik, Aufbewahrungslogik, Zonenwechselbehandlung, UI-Virtualisierung, Performance-Diagnose, Stress-Testdaten, TRP3-Anfrage-Cooldown und globale Drosselung, sowie sämtliche Datenschutzprinzipien bleiben unverändert. Es gibt weiterhin genau einen dauerhaften Scanner-Ticker und kein dauerhaftes `OnUpdate`. Ausschließlich während des aktiven Ziehens der Minimap-Schaltfläche wird vorübergehend ein Interaktions-Handler verwendet und beim Ende des Ziehens wieder entfernt.
 
 ## Datenschutz
 
