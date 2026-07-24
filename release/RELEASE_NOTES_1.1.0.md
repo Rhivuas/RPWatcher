@@ -5,7 +5,7 @@ RPWatcher 1.1.0 ist ein begrenztes UI-/UX-Verbesserungspaket auf Basis der erste
 ## Neu in 1.1.0
 
 - Überflüssiger Untertitel „Beobachtungsübersicht“ entfernt; kompaktere Titelleiste, sauber vertikal zentrierter Titel, mehr Platz für Statusübersicht und Watcherliste.
-- Drei klar unterscheidbare Statussymbole (▲ Aktuell, ● Vorher, ? Unbekannt) statt derselben Form in drei Farben. Farbe bleibt ergänzend (Grün/Grau/Gold), ist aber nicht mehr das einzige Unterscheidungsmerkmal. Zentrale Symbolzuordnung in `Theme.lua`, gemeinsam für Statusleiste und Zeilen.
+- Drei klar unterscheidbare Statussymbole (Augen-Symbol für Aktuell, Verlaufspfeil für Vorher, ASCII-Fragezeichen für Unbekannt) statt derselben Form in drei Farben. Farbe bleibt ergänzend (Grün/Grau/Gold), ist aber nicht mehr das einzige Unterscheidungsmerkmal. Aus Texture-/Frame-Objekten aufgebaut (keine Unicode-Glyphen mehr), zentrale Statusindikator-API in `Theme.lua`, gemeinsam für Statusleiste und Zeilen.
 - TRP3-Profilbutton erscheint jetzt ausschließlich, wenn für den echten Watcher tatsächlich ein Total-RP-3-Profil bestätigt wurde. Ein bekannter RP-Name allein aktiviert den Button nicht mehr. Kein reservierter Leerraum bei verborgenem Button.
 - Neue Minimap-Schaltfläche mit dem originalen RPWatcher-Icon: Linksklick blendet das Fenster ein/aus, Rechtsklick öffnet die Einstellungen, Ziehen speichert die Position entlang des Minimap-Randes. Keine externe Bibliothek.
 - Neue Einstellung „Minimap-Schaltfläche anzeigen“; Ausblenden verwirft die gespeicherte Position nicht.

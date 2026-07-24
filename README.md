@@ -57,11 +57,11 @@ Beim Update von 0.9.0 auf 1.0.0 blieb das Datenbankschema unverändert. Beim Upd
 
 ## Statuszustände
 
-- **▲ Aktuell (grün):** Der sichtbare Spieler hat dich gerade im Target; Zeittext `seit …`.
-- **● Vorher (grau):** Der weiterhin sichtbare Spieler hatte dich zuvor im Target; Zeittext `zuletzt vor …`.
-- **? Unbekannt (gold):** Die Nameplate ist nicht mehr sichtbar, daher kann der aktuelle Target-Status nicht geprüft werden; Zeittext `nicht sichtbar · …`.
+- **Aktuell (grün):** kleines Augen-Symbol (Ausschnitt des RPWatcher-Icons). Der sichtbare Spieler hat dich gerade im Target; Zeittext `seit …`.
+- **Vorher (grau):** kompakter, nach links gerichteter Verlaufspfeil. Der weiterhin sichtbare Spieler hatte dich zuvor im Target; Zeittext `zuletzt vor …`.
+- **Unbekannt (gold):** ASCII-Fragezeichen `?`. Die Nameplate ist nicht mehr sichtbar, daher kann der aktuelle Target-Status nicht geprüft werden; Zeittext `nicht sichtbar · …`.
 
-Die drei Zustände unterscheiden sich seit 1.1.0 durch deutlich unterschiedliche Symbole, nicht nur durch Farbe. Farbe ist zusätzlich nie das einzige Merkmal: Symbol und Text benennen jeden Zustand zusätzlich.
+Die drei Zustände unterscheiden sich seit 1.1.0 durch deutlich unterschiedliche, aus Texture-/Frame-Objekten aufgebaute Symbole, nicht nur durch Farbe. Farbe ist zusätzlich nie das einzige Merkmal: Symbol und Text benennen jeden Zustand zusätzlich.
 
 ## Total-RP-3-Integration
 

@@ -23,8 +23,9 @@ Für jeden Punkt `Bestanden`, `Nicht bestanden` oder `Nicht anwendbar` eintragen
 | ID | Testschritt | Erwartung | Ergebnis | Bestanden/Nicht bestanden | Notizen |
 |---|---|---|---|---|---|
 | H-01 | Hauptfenster öffnen und Titelleiste betrachten. | Untertitel „Beobachtungsübersicht“ ist vollständig entfernt; keine leere Lücke; Titel „RPWatcher“ ist sauber vertikal zentriert. |  |  |  |
-| H-02 | `/rpw test` ausführen und alle drei Zeilen betrachten. | Aktuell zeigt ▲, Vorher zeigt ●, Unbekannt zeigt ? – drei klar unterschiedliche Formen, nicht nur Farben. |  |  |  |
-| H-03 | Statusleiste (Zusammenfassung oben) mit Zeilen vergleichen. | Dieselben Symbole werden in Statusleiste und Zeilen konsistent verwendet. |  |  |  |
+| H-02 | `/rpw test` ausführen und alle drei Zeilen betrachten. | Aktuell zeigt ein grünes Augen-Symbol, Vorher einen grauen Verlaufspfeil, Unbekannt ein goldenes ASCII-Fragezeichen `?` – drei klar unterschiedliche Formen, nicht nur Farben. |  |  |  |
+| H-02a | (Regressionstest 1.1.0) Alle drei Symbole in Statusleiste und Zeilen genau betrachten, ggf. Screenshot anfertigen. | Es erscheint an keiner Stelle eine Raute mit Fragezeichen (Ersatzglyph für fehlende Unicode-Zeichen); Augen-Symbol und Verlaufspfeil sind als solche erkennbar. |  |  |  |
+| H-03 | Statusleiste (Zusammenfassung oben) mit Zeilen vergleichen. | Dieselben Symbole werden in Statusleiste und Zeilen konsistent verwendet; jeder Statusbereich zeigt eigenen Indikator plus eigenen Zähler-Text. |  |  |  |
 | H-04 | Kontrast auf dunklem Hintergrund prüfen. | Alle drei Symbole und Farben bleiben gut lesbar. |  |  |  |
 | H-05 | Fenster mehrere Minuten beobachten. | Keine permanente Animation; keine spürbare zusätzliche Dauerarbeit. |  |  |  |
 
@@ -44,6 +45,7 @@ Für jeden Punkt `Bestanden`, `Nicht bestanden` oder `Nicht anwendbar` eintragen
 
 | ID | Testschritt | Erwartung | Ergebnis | Bestanden/Nicht bestanden | Notizen |
 |---|---|---|---|---|---|
+| M-00 | (Regressionstest 1.1.0) Nach normalem Login/Reload direkt auf die Minimap schauen, ohne weitere Aktion. | Die RPWatcher-Minimap-Schaltfläche mit dem RPWatcher-Icon ist sichtbar an der Minimap angeheftet; kein BugSack-Fehler. |  |  |  |
 | M-01 | Minimap-Schaltfläche per Linksklick betätigen. | Verhält sich identisch zu `/rpw` (manuelle Sichtbarkeit umschalten). |  |  |  |
 | M-02 | Minimap-Schaltfläche per Rechtsklick betätigen. | Öffnet die RPWatcher-Einstellungsseite defensiv, identisch zu `/rpw options`. |  |  |  |
 | M-03 | Schaltfläche entlang des Minimap-Randes ziehen, danach `/reload` ausführen. | Position wird gespeichert und bleibt nach `/reload` an derselben Stelle. |  |  |  |

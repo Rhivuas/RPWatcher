@@ -73,24 +73,45 @@ statusDivider:SetPoint("BOTTOMLEFT")
 statusDivider:SetPoint("BOTTOMRIGHT")
 statusDivider:SetHeight(1)
 
-local activeSummary = statusBar:CreateFontString(nil, "OVERLAY", Theme.fonts.secondary)
-activeSummary:SetPoint("LEFT", 11, 0)
-activeSummary:SetJustifyH("LEFT")
-Theme:SetFontColor(activeSummary, colors.active)
+-- Each summary slot pairs a reusable Theme status indicator with its own
+-- count/label FontString; only the label text and slot width change on
+-- refresh, no child frames are created per refresh.
+local function createSummarySlot(anchorPoint, xOffset, labelColor)
+    local slot = CreateFrame("Frame", nil, statusBar)
+    slot:SetHeight(layout.statusHeight)
+    slot:SetPoint(anchorPoint, statusBar, anchorPoint, xOffset, 0)
 
-local inactiveSummary = statusBar:CreateFontString(nil, "OVERLAY", Theme.fonts.secondary)
-inactiveSummary:SetPoint("CENTER", 0, 0)
-inactiveSummary:SetJustifyH("CENTER")
-Theme:SetFontColor(inactiveSummary, colors.inactive)
+    local indicator = Theme:CreateStatusIndicator(slot, 14)
+    indicator:SetPoint("LEFT", slot, "LEFT", 0, 0)
 
-local unknownSummary = statusBar:CreateFontString(nil, "OVERLAY", Theme.fonts.secondary)
-unknownSummary:SetPoint("RIGHT", -11, 0)
-unknownSummary:SetJustifyH("RIGHT")
-Theme:SetFontColor(unknownSummary, colors.unknown)
+    local label = slot:CreateFontString(nil, "OVERLAY", Theme.fonts.secondary)
+    label:SetPoint("LEFT", indicator, "RIGHT", 5, 0)
+    label:SetJustifyH("LEFT")
+    Theme:SetFontColor(label, labelColor)
 
-activeSummary:SetText(Theme.statusIcons.active .. " 0 aktuell")
-inactiveSummary:SetText(Theme.statusIcons.inactive .. " 0 vorher")
-unknownSummary:SetText(Theme.statusIcons.unknown .. " 0 unbekannt")
+    slot.indicator = indicator
+    slot.label = label
+    return slot
+end
+
+local function updateSummarySlotWidth(slot)
+    slot:SetWidth(math.max(slot.indicator:GetWidth(), slot.indicator:GetWidth() + 5 + slot.label:GetStringWidth()))
+end
+
+local activeSummarySlot = createSummarySlot("LEFT", 11, colors.active)
+local inactiveSummarySlot = createSummarySlot("CENTER", 0, colors.inactive)
+local unknownSummarySlot = createSummarySlot("RIGHT", -11, colors.unknown)
+
+Theme:SetStatusIndicator(activeSummarySlot.indicator, "active")
+Theme:SetStatusIndicator(inactiveSummarySlot.indicator, "inactive")
+Theme:SetStatusIndicator(unknownSummarySlot.indicator, "unknown")
+
+activeSummarySlot.label:SetText("0 aktuell")
+inactiveSummarySlot.label:SetText("0 vorher")
+unknownSummarySlot.label:SetText("0 unbekannt")
+updateSummarySlotWidth(activeSummarySlot)
+updateSummarySlotWidth(inactiveSummarySlot)
+updateSummarySlotWidth(unknownSummarySlot)
 
 local listArea = CreateFrame("Frame", nil, frame, "BackdropTemplate")
 listArea:SetPoint("TOPLEFT", layout.outerPadding, -(layout.titleHeight + layout.statusHeight + 5))
@@ -298,10 +319,8 @@ local function acquireRow(index)
     row.statusAccent:SetPoint("BOTTOMLEFT", 0, 3)
     row.statusAccent:SetWidth(2)
 
-    row.statusIcon = row:CreateFontString(nil, "OVERLAY", Theme.fonts.title)
-    row.statusIcon:SetPoint("LEFT", 6, 0)
-    row.statusIcon:SetWidth(19)
-    row.statusIcon:SetJustifyH("CENTER")
+    row.statusIndicator = Theme:CreateStatusIndicator(row, 16)
+    row.statusIndicator:SetPoint("LEFT", 8, 0)
 
     row.profileButton = CreateFrame("Button", nil, row, "BackdropTemplate")
     row.profileButton:SetPoint("RIGHT", -5, 0)
@@ -329,7 +348,7 @@ local function acquireRow(index)
     Theme:SetFontColor(row.timeText, colors.secondaryText)
 
     row.nameButton = CreateFrame("Button", nil, row)
-    row.nameButton:SetPoint("LEFT", row.statusIcon, "RIGHT", 4, 0)
+    row.nameButton:SetPoint("LEFT", row.statusIndicator, "RIGHT", 4, 0)
     row.nameButton:SetHeight(ROW_HEIGHT)
     row.nameButton.row = row
     row.nameButton:SetScript("OnEnter", showNameTooltip)
@@ -385,22 +404,19 @@ local function updateRow(row, watcher, now, watcherIndex)
         row.timeText:SetPoint("RIGHT", row, "RIGHT", -7, 0)
     end
     row.nameButton:ClearAllPoints()
-    row.nameButton:SetPoint("LEFT", row.statusIcon, "RIGHT", 4, 0)
+    row.nameButton:SetPoint("LEFT", row.statusIndicator, "RIGHT", 4, 0)
     row.nameButton:SetPoint("RIGHT", row.timeText, "LEFT", -9, 0)
 
     if watcher.observationStatus == RPWatcher.Scanner.STATUS_ACTIVE then
-        row.statusIcon:SetText(Theme.statusIcons.active)
-        Theme:SetFontColor(row.statusIcon, colors.active)
+        Theme:SetStatusIndicator(row.statusIndicator, "active")
         Theme:SetTextureColor(row.statusAccent, colors.active)
         Theme:SetTextureColor(row.baseBackground, colors.activeRow, currentBackgroundAlpha)
     elseif watcher.observationStatus == RPWatcher.Scanner.STATUS_INACTIVE then
-        row.statusIcon:SetText(Theme.statusIcons.inactive)
-        Theme:SetFontColor(row.statusIcon, colors.inactive)
+        Theme:SetStatusIndicator(row.statusIndicator, "inactive")
         Theme:SetTextureColor(row.statusAccent, colors.inactive)
         Theme:SetTextureColor(row.baseBackground, colors.inactiveRow, currentBackgroundAlpha)
     else
-        row.statusIcon:SetText(Theme.statusIcons.unknown)
-        Theme:SetFontColor(row.statusIcon, colors.unknown)
+        Theme:SetStatusIndicator(row.statusIndicator, "unknown")
         Theme:SetTextureColor(row.statusAccent, colors.unknown)
         Theme:SetTextureColor(row.baseBackground, colors.unknownRow, currentBackgroundAlpha)
     end
@@ -599,9 +615,12 @@ function UI:RefreshWatcherList()
     watcherCount = activeCount + inactiveCount + unknownCount
     listNeedsRefresh = true
 
-    activeSummary:SetText(("%s %d aktuell"):format(Theme.statusIcons.active, activeCount))
-    inactiveSummary:SetText(("%s %d vorher"):format(Theme.statusIcons.inactive, inactiveCount))
-    unknownSummary:SetText(("%s %d unbekannt"):format(Theme.statusIcons.unknown, unknownCount))
+    activeSummarySlot.label:SetText(("%d aktuell"):format(activeCount))
+    inactiveSummarySlot.label:SetText(("%d vorher"):format(inactiveCount))
+    unknownSummarySlot.label:SetText(("%d unbekannt"):format(unknownCount))
+    updateSummarySlotWidth(activeSummarySlot)
+    updateSummarySlotWidth(inactiveSummarySlot)
+    updateSummarySlotWidth(unknownSummarySlot)
 
     emptyState:SetShown(watcherCount == 0)
     scrollFrame:SetShown(watcherCount > 0)

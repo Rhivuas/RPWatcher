@@ -34,17 +34,17 @@ RPWatcher erkennt Target-Auswahl – keine Blickrichtung, Kamerabewegung oder Ma
 
 ## Statusbedeutung
 
-Seit 1.1.0 unterscheiden sich die drei Zustände durch deutlich unterschiedliche Symbole, nicht nur durch Farbe. Symbol, Farbe und Text benennen jeden Zustand gemeinsam.
+Seit 1.1.0 unterscheiden sich die drei Zustände durch deutlich unterschiedliche, aus Texture-/Frame-Objekten aufgebaute Symbole, nicht nur durch Farbe. Symbol, Farbe und Text benennen jeden Zustand gemeinsam.
 
-### ▲ Aktuell (grün)
+### Aktuell (grün) – Augen-Symbol
 
-Die Nameplate ist sichtbar und der Spieler hat dich gerade im Target. Der Zeitwert beginnt mit diesem aktuellen Target-Vorgang.
+Ein kleines Augen-Symbol (Ausschnitt des originalen RPWatcher-Icons, grün eingefärbt). Die Nameplate ist sichtbar und der Spieler hat dich gerade im Target. Der Zeitwert beginnt mit diesem aktuellen Target-Vorgang.
 
-### ● Vorher (grau)
+### Vorher (grau) – Verlaufspfeil
 
-Die Nameplate ist weiterhin sichtbar. Der Spieler hatte dich zuvor im Target, aktuell jedoch nicht mehr. Der Zeitwert beginnt beim erkannten Wechsel.
+Ein kompakter, nach links gerichteter Verlaufspfeil. Die Nameplate ist weiterhin sichtbar. Der Spieler hatte dich zuvor im Target, aktuell jedoch nicht mehr. Der Zeitwert beginnt beim erkannten Wechsel.
 
-### ? Unbekannt (gold)
+### Unbekannt (gold) – Fragezeichen
 
 Die zuvor erkannte Nameplate ist nicht mehr sichtbar. Ohne gültige Nameplate-Unit kann WoW den Target-Status nicht bereitstellen. Der Eintrag bleibt je nach Einstellung 15 bis 300 Sekunden erhalten.
 

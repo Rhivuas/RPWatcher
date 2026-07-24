@@ -59,4 +59,4 @@
 - Minimap-Button-Logik ist in einem klar abgegrenzten Modul gekapselt.
 - Minimap-Position und -Sichtbarkeit sind Benutzereinstellungen.
 - Neue Statusicons müssen Form und Farbe unterscheiden.
-- Minimap-UI darf keinen zusätzlichen dauerhaften Ticker oder OnUpdate erzeugen.
+- Minimap-UI darf keinen zusätzlichen dauerhaften Ticker oder OnUpdate erzeugen. Ein ausschließlich zwischen OnDragStart und OnDragStop aktiver und in OnDragStop stets entfernter OnUpdate-Handler für direkte Mausinteraktion beim Ziehen ist davon ausgenommen und zulässig.
