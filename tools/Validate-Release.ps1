@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [ValidatePattern('^\d+\.\d+\.\d+$')]
-    [string]$ExpectedVersion = '1.0.0',
+    [string]$ExpectedVersion = '1.1.0',
     [string]$PackagePath
 )
 
@@ -26,6 +26,7 @@ $packageAllowlist = @(
     'Theme.lua',
     'Settings.lua',
     'UI.lua',
+    'Minimap.lua',
     'Scanner.lua',
     'TRP3.lua',
     $runtimeIconPath,
@@ -50,6 +51,8 @@ $expectedProjectFiles = $packageAllowlist + $projectAssetFiles + @(
     'release/TEST_MATRIX_0.9.0.md',
     'release/RELEASE_NOTES_1.0.0.md',
     'release/TEST_MATRIX_1.0.0.md',
+    'release/RELEASE_NOTES_1.1.0.md',
+    'release/TEST_MATRIX_1.1.0.md',
     'release/PUBLISHING.md',
     '.github/ISSUE_TEMPLATE/bug_report.yml',
     '.github/ISSUE_TEMPLATE/feature_request.yml',

@@ -17,13 +17,14 @@ The interface is dark, compact, and inspired by modern WoW and Total RP 3 panels
 - friendly players with visible nameplates as the only detection source
 - players appear only after a confirmed targeting event
 - GUID-based recognition without duplicate entries
-- Current, Previous, and Unknown states
+- three clearly distinguishable states: Current, Previous, and Unknown
 - configurable retention time for unknown watchers
 - movable, resizable, scalable, and lockable window
 - optional auto-hide when the list is empty
 - virtualized list for larger watcher counts
-- optional Total RP 3 roleplay names and profile opening
+- optional Total RP 3 roleplay names and profile opening, shown only once a profile is actually confirmed
 - throttled profile requests
+- dedicated minimap button for quick access without a chat command
 - non-persistent nameplate, performance, and synthetic stress diagnostics
 
 ## Technical limitations
@@ -40,7 +41,7 @@ No telemetry, advertising, or external services. Watchers, other players’ GUID
 
 ## Installation
 
-Copy the `RPWatcher` folder from `RPWatcher-1.0.0.zip` into `World of Warcraft\_retail_\Interface\AddOns\`, then restart the game. Friendly nameplates must be enabled for real-player detection.
+Copy the `RPWatcher` folder from `RPWatcher-1.1.0.zip` into `World of Warcraft\_retail_\Interface\AddOns\`, then restart the game. Friendly nameplates must be enabled for real-player detection.
 
 ## Support
 

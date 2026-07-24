@@ -2,7 +2,7 @@
 
 RPWatcher ist ein deutschsprachiges Addon für World of Warcraft Retail. Es zeigt freundliche Spieler mit sichtbarer Nameplate an, nachdem sie den eigenen Charakter mindestens einmal im Target hatten. Ein aktueller, früherer oder wegen fehlender Nameplate unbekannter Target-Status wird übersichtlich dargestellt. Total RP 3 kann optional RP-Namen und Profilöffnung ergänzen.
 
-- **Version:** 1.0.0
+- **Version:** 1.1.0
 - **Autor:** Mercia
 - **Lizenz:** MIT
 - **Copyright:** Copyright 2026 Mercia
@@ -24,6 +24,7 @@ Nur aktuell API-verfügbare sichtbare Nameplates können live geprüft werden. S
 - Bietet ein skalierbares, verschiebbares, sperrbares und virtualisiertes Fenster.
 - Unterstützt optional RP-Namen und Profilöffnung über Total RP 3.
 - Enthält nicht persistente Diagnose- und synthetische Belastungstests.
+- Bietet eine eigene Minimap-Schaltfläche für schnellen Zugriff ohne Chatbefehl.
 
 ## Projekt- und Addon-Icon
 
@@ -39,7 +40,7 @@ Die Interface-Nummer wurde lokal anhand von Total RP 3 3.3.7 für den Retail-Cli
 
 ## Installation
 
-1. `RPWatcher-1.0.0.zip` entpacken.
+1. `RPWatcher-1.1.0.zip` entpacken.
 2. Den enthaltenen Ordner `RPWatcher` nach `World of Warcraft\_retail_\Interface\AddOns\` kopieren.
 3. Prüfen, dass die Datei `RPWatcher\RPWatcher.toc` existiert und keine Struktur `RPWatcher\RPWatcher\RPWatcher.toc` entstanden ist.
 4. World of Warcraft vollständig starten beziehungsweise neu starten.
@@ -52,15 +53,15 @@ Die Interface-Nummer wurde lokal anhand von Total RP 3 3.3.7 für den Retail-Cli
 3. Eigene SavedVariables nicht löschen, wenn Fenster- und Anzeigeeinstellungen erhalten bleiben sollen.
 4. Spiel starten und mit `/rpw`, `/rpw options` sowie `/reload` die Übernahme prüfen.
 
-Beim Update von 0.9.0 bleibt das Datenbankschema unverändert. Watcher- und RP-Daten sind reine Laufzeitdaten und werden bei Reload oder Neustart ohnehin verworfen.
+Beim Update von 0.9.0 auf 1.0.0 blieb das Datenbankschema unverändert. Beim Update von 1.0.0 auf 1.1.0 wird das Datenbankschema kontrolliert von Version 2 auf Version 3 erhöht: bestehende Fenster- und Benutzereinstellungen bleiben vollständig erhalten, neue Felder für die Minimap-Schaltfläche erhalten automatisch Standardwerte. Watcher- und RP-Daten sind reine Laufzeitdaten und werden bei Reload oder Neustart ohnehin verworfen.
 
 ## Statuszustände
 
-- **● Aktuell (grün):** Der sichtbare Spieler hat dich gerade im Target; Zeittext `seit …`.
+- **▲ Aktuell (grün):** Der sichtbare Spieler hat dich gerade im Target; Zeittext `seit …`.
 - **● Vorher (grau):** Der weiterhin sichtbare Spieler hatte dich zuvor im Target; Zeittext `zuletzt vor …`.
-- **? Unbekannt:** Die Nameplate ist nicht mehr sichtbar, daher kann der aktuelle Target-Status nicht geprüft werden; Zeittext `nicht sichtbar · …`.
+- **? Unbekannt (gold):** Die Nameplate ist nicht mehr sichtbar, daher kann der aktuelle Target-Status nicht geprüft werden; Zeittext `nicht sichtbar · …`.
 
-Farbe ist nicht das einzige Merkmal: Symbol und Text benennen jeden Zustand zusätzlich.
+Die drei Zustände unterscheiden sich seit 1.1.0 durch deutlich unterschiedliche Symbole, nicht nur durch Farbe. Farbe ist zusätzlich nie das einzige Merkmal: Symbol und Text benennen jeden Zustand zusätzlich.
 
 ## Total-RP-3-Integration
 
@@ -70,6 +71,8 @@ RPWatcher funktioniert vollständig ohne Total RP 3. Wenn Total RP 3 verfügbar 
 - bleibt der normale vollständige WoW-Name technisch erhalten,
 - kann ein echtes Watcherprofil über `Profil` geöffnet werden,
 - werden Profilanfragen pro GUID 30 Sekunden gedrosselt und zusätzlich global begrenzt.
+
+Der Button `Profil` erscheint seit 1.1.0 ausschließlich, wenn für den betreffenden echten Watcher tatsächlich ein Total-RP-3-Profil bestätigt wurde. Ein bekannter RP-Name allein genügt dafür nicht; ohne bestätigtes Profil bleibt der Button verborgen und beansprucht auch keinen Platz in der Zeile.
 
 RPWatcher liest oder speichert keine Profiltexte. Test- und Stressdaten lösen niemals TRP3-Kommunikation aus. Die Profilöffnung verwendet den lokal gegen Total RP 3 3.3.7 verifizierten Export `TRP3_API.slash.openProfile` und verändert das aktuelle Target nicht.
 
@@ -83,9 +86,20 @@ Die Seite **Optionen > AddOns > RPWatcher** beziehungsweise `/rpw options` enth�
 - unbekannte Watcher 15, 30, 60, 120 oder 300 Sekunden behalten
 - Fenster bei leerer Liste automatisch ausblenden
 - TRP3-Profilbutton ein- oder ausblenden
+- Minimap-Schaltfläche anzeigen
 - Position und Darstellung des Fensters zurücksetzen
 
 Manuelle Sichtbarkeit und vorübergehende Auto-Ausblendung bleiben getrennt. Ein manuell geschlossenes Fenster wird durch neue Watcher nicht ungefragt geöffnet.
+
+## Minimap-Schaltfläche
+
+Seit 1.1.0 bietet RPWatcher eine eigene Minimap-Schaltfläche mit dem originalen RPWatcher-Icon als Alternative zu `/rpw`:
+
+- **Linksklick:** blendet das Hauptfenster ein oder aus (identisch zu `/rpw`).
+- **Rechtsklick:** öffnet die RPWatcher-Einstellungen (identisch zu `/rpw options`).
+- **Ziehen:** verschiebt die Schaltfläche entlang des Minimap-Randes; die Position bleibt nach `/reload` erhalten.
+
+Die Schaltfläche lässt sich in den Einstellungen ausblenden. Die gespeicherte Position geht dabei nicht verloren; beim erneuten Aktivieren erscheint die Schaltfläche wieder an derselben Stelle. `/rpw reset` verändert weder Sichtbarkeit noch Position der Minimap-Schaltfläche.
 
 ## Slash-Befehle
 

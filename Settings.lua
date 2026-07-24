@@ -6,7 +6,7 @@ RPWatcher.Settings = SettingsModule
 local Theme = RPWatcher.Theme
 local colors = Theme.colors
 
-SettingsModule.SCHEMA_VERSION = 2
+SettingsModule.SCHEMA_VERSION = 3
 
 local MIN_WIDTH = 320
 local MIN_HEIGHT = 170
@@ -31,6 +31,8 @@ local DEFAULTS = {
     unknownRetentionSeconds = 60,
     autoHideWhenEmpty = false,
     showTRP3ProfileButton = true,
+    showMinimapButton = true,
+    minimapAngle = 225,
 }
 
 local VALID_POINTS = {
@@ -100,12 +102,19 @@ local function validateDatabase(database)
         and database.autoHideWhenEmpty or DEFAULTS.autoHideWhenEmpty
     database.showTRP3ProfileButton = type(database.showTRP3ProfileButton) == "boolean"
         and database.showTRP3ProfileButton or DEFAULTS.showTRP3ProfileButton
+    database.showMinimapButton = type(database.showMinimapButton) == "boolean"
+        and database.showMinimapButton or DEFAULTS.showMinimapButton
+    database.minimapAngle = isFiniteNumber(database.minimapAngle)
+        and (database.minimapAngle % 360) or DEFAULTS.minimapAngle
     database.schemaVersion = SettingsModule.SCHEMA_VERSION
 end
 
 local function notifySettingChanged(settingName)
     if RPWatcher.UI and RPWatcher.UI.OnSettingChanged then
         RPWatcher.UI:OnSettingChanged(settingName)
+    end
+    if RPWatcher.Minimap and RPWatcher.Minimap.OnSettingChanged then
+        RPWatcher.Minimap:OnSettingChanged(settingName)
     end
 end
 
@@ -179,6 +188,7 @@ local function refreshOptionsPanel()
     panelControls.retention:SetText(SettingsModule:GetUnknownRetentionSeconds() .. " Sekunden")
     panelControls.autoHide:SetChecked(SettingsModule:IsAutoHideEnabled())
     panelControls.profileButton:SetChecked(SettingsModule:IsProfileButtonEnabled())
+    panelControls.minimapButton:SetChecked(SettingsModule:IsMinimapButtonEnabled())
     refreshingPanel = false
 end
 
@@ -278,6 +288,16 @@ local function registerOptionsPanel()
     end)
 
     createHint(optionsPanel, "RP-Namen und Profilabfragen funktionieren unabhängig von dieser Anzeigeoption.", 54, -534)
+
+    createSectionHeader(optionsPanel, "Minimap", -566)
+
+    panelControls.minimapButton = createCheckbox(optionsPanel, "Minimap-Schaltfläche anzeigen", 20, -591, function(self)
+        if not refreshingPanel then
+            SettingsModule:SetMinimapButtonEnabled(self:GetChecked())
+        end
+    end)
+
+    createHint(optionsPanel, "Verbirgt oder zeigt die Minimap-Schaltfläche; die gespeicherte Position bleibt dabei erhalten.", 54, -620)
 
     optionsPanel:SetScript("OnShow", refreshOptionsPanel)
 
@@ -393,6 +413,28 @@ function SettingsModule:SetProfileButtonEnabled(isEnabled)
     RPWatcherDB.showTRP3ProfileButton = isEnabled and true or false
     notifySettingChanged("showTRP3ProfileButton")
     refreshOptionsPanel()
+end
+
+function SettingsModule:IsMinimapButtonEnabled()
+    return RPWatcherDB.showMinimapButton
+end
+
+function SettingsModule:SetMinimapButtonEnabled(isEnabled)
+    RPWatcherDB.showMinimapButton = isEnabled and true or false
+    notifySettingChanged("showMinimapButton")
+    refreshOptionsPanel()
+end
+
+function SettingsModule:GetMinimapAngle()
+    return RPWatcherDB.minimapAngle
+end
+
+function SettingsModule:SetMinimapAngle(angle)
+    if not isFiniteNumber(angle) then
+        return false
+    end
+    RPWatcherDB.minimapAngle = angle % 360
+    return true
 end
 
 function SettingsModule:ResetWindowSettings()

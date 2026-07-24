@@ -55,3 +55,8 @@
 - Keine externe Bibliothek ohne ausdrückliche Freigabe.
 - Nach jeder Phase ist eine manuelle Ingame-Testanleitung erforderlich.
 - Codex kann WoW nicht selbst vollständig testen; die Ingame-Tests übernimmt der Benutzer.
+- Profilbuttons dürfen nur bei bestätigter Profilverfügbarkeit angezeigt werden.
+- Minimap-Button-Logik ist in einem klar abgegrenzten Modul gekapselt.
+- Minimap-Position und -Sichtbarkeit sind Benutzereinstellungen.
+- Neue Statusicons müssen Form und Farbe unterscheiden.
+- Minimap-UI darf keinen zusätzlichen dauerhaften Ticker oder OnUpdate erzeugen.

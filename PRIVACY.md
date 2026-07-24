@@ -1,6 +1,6 @@
 # Datenschutz bei RPWatcher
 
-Stand: Version 1.0.0
+Stand: Version 1.1.0
 
 RPWatcher ist ein lokal im World-of-Warcraft-Client ausgeführtes Addon.
 
@@ -37,6 +37,7 @@ Diese Informationen existieren nur während der aktuellen Spielsitzung im Arbeit
 - Aufbewahrungsdauer unbekannter Watcher,
 - Auto-Ausblendung,
 - Anzeigeeinstellung des TRP3-Profilbuttons,
+- Sichtbarkeit und Position der Minimap-Schaltfläche,
 - Datenbankschema-Version.
 
 Es werden keine fremden Charakter- oder Profildaten in `RPWatcherDB` geschrieben.

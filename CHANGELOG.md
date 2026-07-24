@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.1.0
+
+- Überflüssigen, funktionslosen Untertitel „Beobachtungsübersicht“ aus dem Hauptfenster entfernt; Titelleiste kompakter gestaltet und Statusübersicht sowie Listenbereich rücken in den frei gewordenen Platz nach.
+- Drei klar unterscheidbare Statussymbole (Aktuell, Vorher, Unbekannt) eingeführt; Farbe bleibt ergänzend, ist aber nicht mehr das einzige Unterscheidungsmerkmal. Zentrale Symbolzuordnung in `Theme.lua`, gemeinsam genutzt von Statusleiste und Watcher-Zeilen.
+- TRP3-Profilbutton erscheint jetzt ausschließlich, wenn für den echten Watcher tatsächlich ein Total-RP-3-Profil bestätigt wurde; ein bekannter RP-Name allein reicht dafür nicht mehr aus. Kein reservierter Leerraum, wenn der Button verborgen ist.
+- Neue Minimap-Schaltfläche mit dem originalen RPWatcher-Icon für schnellen Zugriff ohne Chatbefehl ergänzt (`Minimap.lua`, keine externe Bibliothek). Linksklick entspricht `/rpw`, Rechtsklick entspricht `/rpw options`, Ziehen speichert die Position entlang des Minimap-Randes.
+- Neue Einstellung „Minimap-Schaltfläche anzeigen“ ergänzt; Ausblenden verwirft die gespeicherte Position nicht.
+- Datenbankschema kontrolliert von Version 2 auf Version 3 erhöht, um die neuen Minimap-Einstellungen zu speichern; bestehende 1.0.0-Einstellungen bleiben vollständig erhalten.
+- Kleinere responsive Layoutverbesserungen an Kopfbereich und Zeilen im Rahmen der obigen Änderungen.
+- Scanner-, Performance-, TRP3-Kern- (abgesehen von der neuen Profilverfügbarkeitsprüfung über bestehende Anfragewege) und Datenschutzprinzipien unverändert beibehalten.
+
 ## 1.0.0
 
 - Eigenes RPWatcher-Addon- und Projekticon ergänzt.

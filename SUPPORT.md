@@ -1,6 +1,6 @@
 # RPWatcher-Support und Fehlerberichte
 
-Vielen Dank für einen möglichst reproduzierbaren Bericht. Rückmeldungen zu Regressionen, Interface-Kompatibilität und Großereignissen helfen bei der Pflege von RPWatcher 1.0.0.
+Vielen Dank für einen möglichst reproduzierbaren Bericht. Rückmeldungen zu Regressionen, Interface-Kompatibilität und Großereignissen helfen bei der Pflege von RPWatcher 1.1.0.
 
 ## Erforderliche Angaben
 

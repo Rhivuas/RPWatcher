@@ -32,11 +32,23 @@ Theme.colors = {
 Theme.layout = {
     outerPadding = 10,
     innerPadding = 8,
-    titleHeight = 38,
+    titleHeight = 28,
     statusHeight = 34,
     rowHeight = 30,
     rowGap = 2,
     profileButtonWidth = 52,
+}
+
+-- Locally confirmed shape-first status glyphs (1.1.0): "Aktuell" keeps the
+-- previously verified bullet, "Vorher" and "Unbekannt" get distinct silhouettes
+-- so the three states no longer read as one recolored shape. See
+-- PERFORMANCE_AUDIT.md / CHANGELOG.md 1.1.0 for the asset-verification notes;
+-- no atlas or texture path was locally confirmable for all three states, so
+-- this is the documented text-glyph fallback rather than Texture objects.
+Theme.statusIcons = {
+    active = "\226\150\178",   -- U+25B2 triangle: focused/active observation
+    inactive = "\226\151\143", -- U+25CF bullet: same glyph already verified live in 1.0.0
+    unknown = "?",             -- plain ASCII question mark: unresolved/no nameplate
 }
 
 Theme.fonts = {

@@ -140,6 +140,10 @@ function Core:Initialize()
         RPWatcher.UI:Initialize()
     end
 
+    if RPWatcher.Minimap then
+        RPWatcher.Minimap:Initialize()
+    end
+
     if RPWatcher.Scanner then
         RPWatcher.Scanner:Initialize()
     end

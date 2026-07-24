@@ -43,14 +43,9 @@ titleAccent:SetPoint("BOTTOMRIGHT")
 titleAccent:SetHeight(1)
 
 local title = titleBar:CreateFontString(nil, "OVERLAY", Theme.fonts.title)
-title:SetPoint("TOPLEFT", 13, -6)
+title:SetPoint("LEFT", titleBar, "LEFT", 13, 0)
 title:SetText("RPWatcher")
 Theme:SetFontColor(title, colors.text)
-
-local subtitle = titleBar:CreateFontString(nil, "OVERLAY", Theme.fonts.small)
-subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -1)
-subtitle:SetText("Beobachtungsübersicht")
-Theme:SetFontColor(subtitle, colors.secondaryText)
 
 local lockIndicator = CreateFrame("Frame", nil, titleBar)
 lockIndicator:SetPoint("RIGHT", titleBar, "RIGHT", -35, 0)
@@ -93,9 +88,9 @@ unknownSummary:SetPoint("RIGHT", -11, 0)
 unknownSummary:SetJustifyH("RIGHT")
 Theme:SetFontColor(unknownSummary, colors.unknown)
 
-activeSummary:SetText("● 0 aktuell")
-inactiveSummary:SetText("● 0 vorher")
-unknownSummary:SetText("? 0 unbekannt")
+activeSummary:SetText(Theme.statusIcons.active .. " 0 aktuell")
+inactiveSummary:SetText(Theme.statusIcons.inactive .. " 0 vorher")
+unknownSummary:SetText(Theme.statusIcons.unknown .. " 0 unbekannt")
 
 local listArea = CreateFrame("Frame", nil, frame, "BackdropTemplate")
 listArea:SetPoint("TOPLEFT", layout.outerPadding, -(layout.titleHeight + layout.statusHeight + 5))
@@ -376,6 +371,7 @@ local function updateRow(row, watcher, now, watcherIndex)
 
     local profileAvailable = RPWatcher.Settings:IsProfileButtonEnabled()
         and not watcher.isTest
+        and watcher.hasTRP3Profile == true
         and RPWatcher.TRP3
         and RPWatcher.TRP3:IsAvailable()
         and RPWatcher.TRP3:IsProfileOpenAvailable()
@@ -393,17 +389,17 @@ local function updateRow(row, watcher, now, watcherIndex)
     row.nameButton:SetPoint("RIGHT", row.timeText, "LEFT", -9, 0)
 
     if watcher.observationStatus == RPWatcher.Scanner.STATUS_ACTIVE then
-        row.statusIcon:SetText("●")
+        row.statusIcon:SetText(Theme.statusIcons.active)
         Theme:SetFontColor(row.statusIcon, colors.active)
         Theme:SetTextureColor(row.statusAccent, colors.active)
         Theme:SetTextureColor(row.baseBackground, colors.activeRow, currentBackgroundAlpha)
     elseif watcher.observationStatus == RPWatcher.Scanner.STATUS_INACTIVE then
-        row.statusIcon:SetText("●")
+        row.statusIcon:SetText(Theme.statusIcons.inactive)
         Theme:SetFontColor(row.statusIcon, colors.inactive)
         Theme:SetTextureColor(row.statusAccent, colors.inactive)
         Theme:SetTextureColor(row.baseBackground, colors.inactiveRow, currentBackgroundAlpha)
     else
-        row.statusIcon:SetText("?")
+        row.statusIcon:SetText(Theme.statusIcons.unknown)
         Theme:SetFontColor(row.statusIcon, colors.unknown)
         Theme:SetTextureColor(row.statusAccent, colors.unknown)
         Theme:SetTextureColor(row.baseBackground, colors.unknownRow, currentBackgroundAlpha)
@@ -603,9 +599,9 @@ function UI:RefreshWatcherList()
     watcherCount = activeCount + inactiveCount + unknownCount
     listNeedsRefresh = true
 
-    activeSummary:SetText(("● %d aktuell"):format(activeCount))
-    inactiveSummary:SetText(("● %d vorher"):format(inactiveCount))
-    unknownSummary:SetText(("? %d unbekannt"):format(unknownCount))
+    activeSummary:SetText(("%s %d aktuell"):format(Theme.statusIcons.active, activeCount))
+    inactiveSummary:SetText(("%s %d vorher"):format(Theme.statusIcons.inactive, inactiveCount))
+    unknownSummary:SetText(("%s %d unbekannt"):format(Theme.statusIcons.unknown, unknownCount))
 
     emptyState:SetShown(watcherCount == 0)
     scrollFrame:SetShown(watcherCount > 0)
@@ -660,6 +656,8 @@ function UI:OnSettingChanged(settingName)
     elseif settingName == "visibility" or settingName == "autoHideWhenEmpty" then
         self:UpdateActualVisibility()
     elseif settingName == "unknownRetentionSeconds" then
+        return
+    elseif settingName == "showMinimapButton" then
         return
     else
         self:ApplySettings()

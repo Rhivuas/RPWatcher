@@ -179,6 +179,7 @@ local function createWatcher(guid, unitToken, fullName, now)
         lastVisibleAt = now,
         lastChangedAt = now,
         isTest = false,
+        hasTRP3Profile = false,
     }
     watchersByGUID[guid] = watcher
     markDataChanged(watcher, now)
@@ -326,6 +327,23 @@ function Scanner:SetWatcherRPName(guid, rpName)
     end
 
     watcher.rpName = rpName
+    markDataChanged(watcher, GetTime())
+    notifyIfChanged()
+    return true
+end
+
+function Scanner:SetWatcherProfileKnown(guid, hasProfile)
+    local watcher = self:GetWatcherByGUID(guid)
+    if not watcher or watcher.isTest then
+        return false
+    end
+
+    hasProfile = hasProfile and true or false
+    if watcher.hasTRP3Profile == hasProfile then
+        return false
+    end
+
+    watcher.hasTRP3Profile = hasProfile
     markDataChanged(watcher, GetTime())
     notifyIfChanged()
     return true
@@ -555,6 +573,7 @@ function Scanner:AddTestData()
         lastVisibleAt = now,
         lastChangedAt = now - 12,
         isTest = true,
+        hasTRP3Profile = false,
         rpName = "[Test] Lady Aktuell",
     }
     watchersByGUID[TEST_GUID_INACTIVE] = {
@@ -571,6 +590,7 @@ function Scanner:AddTestData()
         lastVisibleAt = now,
         lastChangedAt = now - 8,
         isTest = true,
+        hasTRP3Profile = false,
         rpName = "[Test] Lord Vorher",
     }
     watchersByGUID[TEST_GUID_UNKNOWN] = {
@@ -587,6 +607,7 @@ function Scanner:AddTestData()
         lastVisibleAt = now - 2,
         lastChangedAt = now - 2,
         isTest = true,
+        hasTRP3Profile = false,
     }
     markDataChanged(nil, now)
     notifyIfChanged()
@@ -642,6 +663,7 @@ function Scanner:AddStressData(count)
             lastChangedAt = now - elapsed,
             isTest = true,
             isStress = true,
+            hasTRP3Profile = false,
         }
     end
     markDataChanged(nil, now)

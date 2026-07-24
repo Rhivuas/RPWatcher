@@ -20,6 +20,7 @@ $packageAllowlist = @(
     'Theme.lua',
     'Settings.lua',
     'UI.lua',
+    'Minimap.lua',
     'Scanner.lua',
     'TRP3.lua',
     'Media/RPWatcherIcon.tga',

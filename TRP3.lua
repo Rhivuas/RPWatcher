@@ -313,6 +313,7 @@ function TRP3:RefreshWatcher(watcher, requestIfMissing)
     if profileKnown then
         RPWatcher.Scanner:SetWatcherRPName(watcher.guid, rpName)
     end
+    RPWatcher.Scanner:SetWatcherProfileKnown(watcher.guid, profileKnown and true or false)
 
     if rpName then
         return true, "name-found"

@@ -17,13 +17,14 @@ Die Oberfläche ist dunkel, kompakt und an moderne WoW-/TRP3-Dialoge angelehnt. 
 - freundliche Spieler mit sichtbarer Nameplate als einzige Erfassungsquelle
 - Aufnahme erst nach einem bestätigten Target-Vorgang
 - GUID-basierte Wiedererkennung ohne Duplikate
-- Grün/Aktuell, Grau/Vorher und Fragezeichen/Unbekannt
+- drei klar unterscheidbare Statuszustände: Aktuell, Vorher und Unbekannt
 - konfigurierbare Aufbewahrung unbekannter Watcher
 - skalierbares, verschiebbares und sperrbares Fenster
 - automatische Ausblendung bei leerer Liste
 - virtualisierte Liste für größere Watchermengen
-- optionale Total-RP-3-RP-Namen und Profilöffnung
+- optionale Total-RP-3-RP-Namen und Profilöffnung nur bei tatsächlich bestätigtem Profil
 - gedrosselte Profilanfragen
+- eigene Minimap-Schaltfläche für schnellen Zugriff ohne Chatbefehl
 - nicht persistente Nameplate-, Performance- und Stresstestdiagnose
 
 ## Technische Grenzen
@@ -40,7 +41,7 @@ Keine Telemetrie, Werbung oder externen Dienste. Watcher, fremde GUIDs, RP-Namen
 
 ## Installation
 
-Den Ordner `RPWatcher` aus `RPWatcher-1.0.0.zip` nach `World of Warcraft\_retail_\Interface\AddOns\` kopieren und das Spiel neu starten. Freundliche Nameplates müssen für reale Erfassung aktiviert sein.
+Den Ordner `RPWatcher` aus `RPWatcher-1.1.0.zip` nach `World of Warcraft\_retail_\Interface\AddOns\` kopieren und das Spiel neu starten. Freundliche Nameplates müssen für reale Erfassung aktiviert sein.
 
 ## Support
 
