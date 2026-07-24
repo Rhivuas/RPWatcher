@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [ValidatePattern('^\d+\.\d+\.\d+$')]
-    [string]$ExpectedVersion = '1.1.0',
+    [string]$ExpectedVersion = '1.1.1',
     [string]$PackagePath
 )
 
@@ -53,6 +53,8 @@ $expectedProjectFiles = $packageAllowlist + $projectAssetFiles + @(
     'release/TEST_MATRIX_1.0.0.md',
     'release/RELEASE_NOTES_1.1.0.md',
     'release/TEST_MATRIX_1.1.0.md',
+    'release/RELEASE_NOTES_1.1.1.md',
+    'release/TEST_MATRIX_1.1.1.md',
     'release/PUBLISHING.md',
     '.github/ISSUE_TEMPLATE/bug_report.yml',
     '.github/ISSUE_TEMPLATE/feature_request.yml',

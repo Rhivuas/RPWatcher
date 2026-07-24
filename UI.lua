@@ -434,22 +434,39 @@ local function hideRow(row)
     row:Hide()
 end
 
+-- Defensive guard (Hotfix 1.1.1): while a data refresh is pending
+-- (listNeedsRefresh == true), currentWatchers is a stale/prior snapshot and
+-- must never be rendered against. Any synchronous event that can fire before
+-- renderWatcherList() has run (e.g. OnSizeChanged from a scrollFrame
+-- SetShown) returns here without rendering instead of observing a
+-- half-updated state.
 local function refreshVisibleRows(now)
-    if not frame:IsShown() or not currentWatchers then
+    if listNeedsRefresh or not frame:IsShown() or not currentWatchers then
         return
     end
 
+    -- The renderable row count is derived from the actual snapshot
+    -- (#currentWatchers), not from the separately computed watcherCount,
+    -- which only drives the status summary, empty-state, and auto-hide.
+    local watcherListCount = #currentWatchers
     local firstWatcherIndex = math.floor(scrollFrame:GetVerticalScroll() / ROW_STRIDE) + 1
     local visibleCapacity = math.max(1, math.ceil(scrollFrame:GetHeight() / ROW_STRIDE) + 1)
-    local rowsNeeded = math.max(0, math.min(visibleCapacity, watcherCount - firstWatcherIndex + 1))
+    local rowsNeeded = math.max(0, math.min(visibleCapacity, watcherListCount - firstWatcherIndex + 1))
     for poolIndex = 1, rowsNeeded do
         local watcherIndex = firstWatcherIndex + poolIndex - 1
         local row = acquireRow(poolIndex)
         local watcher = currentWatchers[watcherIndex]
-        row:ClearAllPoints()
-        row:SetPoint("TOPLEFT", 0, -((watcherIndex - 1) * ROW_STRIDE))
-        row:SetPoint("TOPRIGHT", 0, -((watcherIndex - 1) * ROW_STRIDE))
-        updateRow(row, watcher, now, watcherIndex)
+        if watcher then
+            row:ClearAllPoints()
+            row:SetPoint("TOPLEFT", 0, -((watcherIndex - 1) * ROW_STRIDE))
+            row:SetPoint("TOPRIGHT", 0, -((watcherIndex - 1) * ROW_STRIDE))
+            updateRow(row, watcher, now, watcherIndex)
+        else
+            -- Defensive fallback only; the reordered refresh above should
+            -- make this unreachable in practice. Never pass a nil watcher
+            -- into updateRow() (the reported UI.lua:385 crash).
+            hideRow(row)
+        end
     end
     for poolIndex = rowsNeeded + 1, #rows do
         hideRow(rows[poolIndex])
@@ -457,8 +474,13 @@ local function refreshVisibleRows(now)
 end
 
 local function renderWatcherList()
+    -- Snapshot first, then mark it current, THEN render: refreshVisibleRows()
+    -- itself now refuses to run while listNeedsRefresh is true, so this order
+    -- is required for its own call below to have any effect.
     currentWatchers = RPWatcher.Scanner:GetSortedWatchers()
-    local contentHeight = math.max(1, watcherCount * ROW_STRIDE)
+    listNeedsRefresh = false
+
+    local contentHeight = math.max(1, #currentWatchers * ROW_STRIDE)
     scrollChild:SetHeight(contentHeight)
     scrollFrame:UpdateScrollChildRect()
 
@@ -468,7 +490,6 @@ local function renderWatcherList()
     end
 
     refreshVisibleRows(GetTime())
-    listNeedsRefresh = false
 end
 
 scrollFrame:SetScript("OnSizeChanged", function(_, width)
@@ -622,9 +643,17 @@ function UI:RefreshWatcherList()
     updateSummarySlotWidth(inactiveSummarySlot)
     updateSummarySlotWidth(unknownSummarySlot)
 
+    -- Hotfix 1.1.1: refresh the actual window/list snapshot BEFORE toggling
+    -- emptyState/scrollFrame visibility below. scrollFrame:SetShown(true) can
+    -- synchronously fire OnSizeChanged -> refreshVisibleRows while still
+    -- inside this function (e.g. via a synchronous TRP3 profile callback
+    -- during watcher creation); by this point currentWatchers must already be
+    -- current and listNeedsRefresh already false, or that handler must safely
+    -- decline to render (see refreshVisibleRows' own guard).
+    self:UpdateActualVisibility()
+
     emptyState:SetShown(watcherCount == 0)
     scrollFrame:SetShown(watcherCount > 0)
-    self:UpdateActualVisibility()
     nextElapsedUpdate = GetTime() + 1
 end
 

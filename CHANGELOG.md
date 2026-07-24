@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.1
+
+- Hotfix: Lua-Laufzeitfehler behoben, bei dem die virtualisierte Watcher-Liste beim Übergang von einer leeren Liste zum ersten echten Watcher gelegentlich mit einem nil-Watcher aufgerufen wurde.
+- Refresh-Reihenfolge in `UI.lua` korrigiert: Der Listensnapshot wird jetzt vor dem Sichtbarwerden des Listenbereichs aktualisiert, sodass ein dadurch synchron ausgelöstes `OnSizeChanged` keine veralteten Daten mehr rendern kann.
+- Zusätzliche defensive Absicherung ergänzt: Eine Zeilenaktualisierung ohne aktuellen Watcher wird kontrolliert übersprungen statt einen Lua-Fehler auszulösen.
+- Keine Änderung an Scanner-, TRP3- oder Datenschutzfunktion; kein Verlust gespeicherter Einstellungen.
+- Alle Funktionen aus 1.1.0 (Statusindikatoren, Minimap-Schaltfläche, TRP3-Profilbutton-Korrektur) bleiben vollständig enthalten.
+
 ## 1.1.0
 
 - Überflüssigen, funktionslosen Untertitel „Beobachtungsübersicht“ aus dem Hauptfenster entfernt; Titelleiste kompakter gestaltet und Statusübersicht sowie Listenbereich rücken in den frei gewordenen Platz nach.

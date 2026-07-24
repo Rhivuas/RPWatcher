@@ -2,7 +2,7 @@
 
 RPWatcher ist ein deutschsprachiges Addon für World of Warcraft Retail. Es zeigt freundliche Spieler mit sichtbarer Nameplate an, nachdem sie den eigenen Charakter mindestens einmal im Target hatten. Ein aktueller, früherer oder wegen fehlender Nameplate unbekannter Target-Status wird übersichtlich dargestellt. Total RP 3 kann optional RP-Namen und Profilöffnung ergänzen.
 
-- **Version:** 1.1.0
+- **Version:** 1.1.1
 - **Autor:** Mercia
 - **Lizenz:** MIT
 - **Copyright:** Copyright 2026 Mercia
@@ -40,7 +40,7 @@ Die Interface-Nummer wurde lokal anhand von Total RP 3 3.3.7 für den Retail-Cli
 
 ## Installation
 
-1. `RPWatcher-1.1.0.zip` entpacken.
+1. `RPWatcher-1.1.1.zip` entpacken.
 2. Den enthaltenen Ordner `RPWatcher` nach `World of Warcraft\_retail_\Interface\AddOns\` kopieren.
 3. Prüfen, dass die Datei `RPWatcher\RPWatcher.toc` existiert und keine Struktur `RPWatcher\RPWatcher\RPWatcher.toc` entstanden ist.
 4. World of Warcraft vollständig starten beziehungsweise neu starten.

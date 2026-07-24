@@ -60,3 +60,6 @@
 - Minimap-Position und -Sichtbarkeit sind Benutzereinstellungen.
 - Neue Statusicons müssen Form und Farbe unterscheiden.
 - Minimap-UI darf keinen zusätzlichen dauerhaften Ticker oder OnUpdate erzeugen. Ein ausschließlich zwischen OnDragStart und OnDragStop aktiver und in OnDragStop stets entfernter OnUpdate-Handler für direkte Mausinteraktion beim Ziehen ist davon ausgenommen und zulässig.
+- Virtualisierte UI-Listen dürfen niemals getrennte Zähler und veraltete Datensnapshots für dieselbe Renderoperation verwenden.
+- Synchrone UI-Ereignisse wie OnSizeChanged müssen während eines ausstehenden Datenrefreshs sicher zurückkehren.
+- Öffentliche Zeilenformatierer dürfen keine nil-Datensätze erhalten.
