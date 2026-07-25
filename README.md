@@ -2,7 +2,7 @@
 
 RPWatcher ist ein deutschsprachiges Addon für World of Warcraft Retail. Es zeigt freundliche Spieler mit sichtbarer Nameplate an, nachdem sie den eigenen Charakter mindestens einmal im Target hatten. Ein aktueller, früherer oder wegen fehlender Nameplate unbekannter Target-Status wird übersichtlich dargestellt. Total RP 3 kann optional RP-Namen und Profilöffnung ergänzen.
 
-- **Version:** 1.1.1
+- **Version:** 1.2.0
 - **Autor:** Mercia
 - **Lizenz:** MIT
 - **Copyright:** Copyright 2026 Mercia
@@ -20,10 +20,11 @@ Nur aktuell API-verfügbare sichtbare Nameplates können live geprüft werden. S
 - Nimmt einen Spieler erst nach einem erkannten Target-Vorgang auf.
 - Verwaltet Watcher GUID-basiert und vermeidet Duplikate.
 - Zeigt aktuelle, frühere und unbekannte Watcher mit laufenden Zeitangaben.
-- Erkennt zurückkehrende Nameplates innerhalb der Aufbewahrungszeit wieder.
-- Bietet ein skalierbares, verschiebbares, sperrbares und virtualisiertes Fenster.
+- Erkennt zurückkehrende Nameplates innerhalb der Aufbewahrungszeit wieder und führt bestehende Zeitangaben nach einem kurzen Sichtverlust nach Möglichkeit fort.
+- Bietet ein skalierbares, verschiebbares, sperrbares und virtualisiertes Fenster, das hinter anderen Blizzard- und Addonfenstern bleibt.
+- Kann sich optional während des Kampfes automatisch ausblenden, ohne Scanner oder Zeitmessung zu unterbrechen.
 - Unterstützt optional RP-Namen und Profilöffnung über Total RP 3.
-- Enthält nicht persistente Diagnose- und synthetische Belastungstests.
+- Enthält nicht persistente Diagnose- und synthetische Belastungstests sowie interne Selbsttests.
 - Bietet eine eigene Minimap-Schaltfläche für schnellen Zugriff ohne Chatbefehl.
 
 ## Projekt- und Addon-Icon
@@ -40,7 +41,7 @@ Die Interface-Nummer wurde lokal anhand von Total RP 3 3.3.7 für den Retail-Cli
 
 ## Installation
 
-1. `RPWatcher-1.1.1.zip` entpacken.
+1. `RPWatcher-1.2.0.zip` entpacken.
 2. Den enthaltenen Ordner `RPWatcher` nach `World of Warcraft\_retail_\Interface\AddOns\` kopieren.
 3. Prüfen, dass die Datei `RPWatcher\RPWatcher.toc` existiert und keine Struktur `RPWatcher\RPWatcher\RPWatcher.toc` entstanden ist.
 4. World of Warcraft vollständig starten beziehungsweise neu starten.
@@ -53,15 +54,17 @@ Die Interface-Nummer wurde lokal anhand von Total RP 3 3.3.7 für den Retail-Cli
 3. Eigene SavedVariables nicht löschen, wenn Fenster- und Anzeigeeinstellungen erhalten bleiben sollen.
 4. Spiel starten und mit `/rpw`, `/rpw options` sowie `/reload` die Übernahme prüfen.
 
-Beim Update von 0.9.0 auf 1.0.0 blieb das Datenbankschema unverändert. Beim Update von 1.0.0 auf 1.1.0 wird das Datenbankschema kontrolliert von Version 2 auf Version 3 erhöht: bestehende Fenster- und Benutzereinstellungen bleiben vollständig erhalten, neue Felder für die Minimap-Schaltfläche erhalten automatisch Standardwerte. Watcher- und RP-Daten sind reine Laufzeitdaten und werden bei Reload oder Neustart ohnehin verworfen.
+Beim Update von 0.9.0 auf 1.0.0 blieb das Datenbankschema unverändert. Beim Update von 1.0.0 auf 1.1.0 wurde das Datenbankschema kontrolliert von Version 2 auf Version 3 erhöht. Beim Update von 1.1.1 auf 1.2.0 wird das Datenbankschema kontrolliert von Version 3 auf Version 4 erhöht: bestehende Fenster- und Benutzereinstellungen bleiben vollständig erhalten, das neue Feld für die Kampf-Auto-Ausblendung erhält automatisch den Standardwert „aus“. Watcher- und RP-Daten sind reine Laufzeitdaten und werden bei Reload oder Neustart ohnehin verworfen.
 
 ## Statuszustände
 
 - **Aktuell (grün):** kleines Augen-Symbol (Ausschnitt des RPWatcher-Icons). Der sichtbare Spieler hat dich gerade im Target; Zeittext `seit …`.
-- **Vorher (grau):** kompakter, nach links gerichteter Verlaufspfeil. Der weiterhin sichtbare Spieler hatte dich zuvor im Target; Zeittext `zuletzt vor …`.
-- **Unbekannt (gold):** ASCII-Fragezeichen `?`. Die Nameplate ist nicht mehr sichtbar, daher kann der aktuelle Target-Status nicht geprüft werden; Zeittext `nicht sichtbar · …`.
+- **Vorher (gold/gelb):** kompakter, nach links gerichteter Verlaufspfeil. Der weiterhin sichtbare Spieler hatte dich zuvor im Target; Zeittext `zuletzt vor …`.
+- **Unbekannt (grau):** ASCII-Fragezeichen `?`. Die Nameplate ist nicht mehr sichtbar, daher kann der aktuelle Target-Status nicht geprüft werden; Zeittext `nicht sichtbar · …`.
 
-Die drei Zustände unterscheiden sich seit 1.1.0 durch deutlich unterschiedliche, aus Texture-/Frame-Objekten aufgebaute Symbole, nicht nur durch Farbe. Farbe ist zusätzlich nie das einzige Merkmal: Symbol und Text benennen jeden Zustand zusätzlich.
+Die drei Zustände unterscheiden sich seit 1.1.0 durch deutlich unterschiedliche, aus Texture-/Frame-Objekten aufgebaute Symbole, nicht nur durch Farbe. Farbe ist zusätzlich nie das einzige Merkmal: Symbol und Text benennen jeden Zustand zusätzlich. Seit 1.2.0 ist Vorher gold/gelb und Unbekannt grau (zuvor umgekehrt); Symbole und Zeittexte sind unverändert.
+
+Ein kurzer Verlust der Nameplate (zum Beispiel durch Wegdrehen der Kamera) setzt die laufende Zeitmessung eines bereits erfassten Watchers innerhalb der eingestellten Aufbewahrungsdauer nicht grundlos zurück; ein bestehender „seit …“- oder „zuletzt vor …“-Zeitbezug wird nach Möglichkeit fortgeführt, sobald der Spieler wieder sichtbar wird.
 
 ## Total-RP-3-Integration
 
@@ -78,18 +81,27 @@ RPWatcher liest oder speichert keine Profiltexte. Test- und Stressdaten lösen n
 
 ## Einstellungen
 
-Die Seite **Optionen > AddOns > RPWatcher** beziehungsweise `/rpw options` enthält:
+Die Seite **Optionen > AddOns > RPWatcher** beziehungsweise `/rpw options` ist seit 1.2.0 in vier Bereiche gegliedert: Fenster, Anzeigeverhalten, Integration und Zugriff. Sie enthält:
 
 - Fenster sperren
+- im Kampf automatisch ausblenden
 - Fensterskalierung von 0,80 bis 1,30
 - Hintergrundtransparenz von 50 bis 100 Prozent
-- unbekannte Watcher 15, 30, 60, 120 oder 300 Sekunden behalten
+- Fenster zurücksetzen
 - Fenster bei leerer Liste automatisch ausblenden
+- unsichtbare Watcher 15, 30, 60, 120 oder 300 Sekunden behalten
 - TRP3-Profilbutton ein- oder ausblenden
 - Minimap-Schaltfläche anzeigen
-- Position und Darstellung des Fensters zurücksetzen
 
-Manuelle Sichtbarkeit und vorübergehende Auto-Ausblendung bleiben getrennt. Ein manuell geschlossenes Fenster wird durch neue Watcher nicht ungefragt geöffnet.
+Manuelle Sichtbarkeit, vorübergehende Auto-Ausblendung bei leerer Liste und die temporäre Kampf-Unterdrückung bleiben drei getrennte Zustände. Ein manuell geschlossenes Fenster wird durch neue Watcher nicht ungefragt geöffnet, und „Fenster zurücksetzen“ setzt ausschließlich Fensterposition, -größe, -skalierung, -transparenz und -sperrstatus zurück.
+
+## Im Kampf automatisch ausblenden
+
+Ist diese seit 1.2.0 verfügbare, standardmäßig deaktivierte Option aktiviert, wird nur das sichtbare RPWatcher-Hauptfenster während eines Kampfes (`PLAYER_REGEN_DISABLED` bis `PLAYER_REGEN_ENABLED`) tatsächlich verborgen. Scanner, Watcher-Zeitmessung und die optionale TRP3-Integration laufen im Kampf unverändert weiter; es findet kein Datenreset statt. Der gespeicherte manuelle Sichtbarkeitswunsch bleibt erhalten: ein während des Kampfes per `/rpw` oder Minimap-Linksklick angefordertes Öffnen erscheint erst nach Kampfende, sofern die Auto-Ausblendung bei leerer Liste dies nicht verhindert; ein während des Kampfes geschlossenes Fenster bleibt auch danach geschlossen.
+
+## Hinter anderen Fenstern
+
+Das RPWatcher-Hauptfenster bleibt seit 1.2.0 auf einer niedrigen Frame-Ebene und tritt nicht mehr vor Charakterfenster, Weltkarte, Taschen oder andere Blizzard- und Addonfenster. Es bleibt weiterhin über der normalen Spielwelt sichtbar und hebt sich durch Anklicken oder Datenaktualisierungen nicht selbst an.
 
 ## Minimap-Schaltfläche
 
@@ -124,6 +136,7 @@ Diese Befehle erzeugen ausschließlich nicht persistente Laufzeitdaten:
 - `/rpw perf on|off|reset|report` – Performance-Messung steuern beziehungsweise berichten.
 - `/rpw stress 25|50|100|200` – synthetische UI-Last erzeugen.
 - `/rpw stress clear` – ausschließlich Stressdaten entfernen.
+- `/rpw selftest` – interne, nicht persistente Prüfungen für Watcher-Zeitfortführung, Statusfarben und Kampf-Sichtbarkeit ausführen und als Bericht im Chat ausgeben.
 
 Diagnose und Stressdaten enthalten keine echten GUID-Ausgaben, werden nicht gespeichert und lösen keine Unit- oder TRP3-Aufrufe mit künstlichen Identitäten aus.
 

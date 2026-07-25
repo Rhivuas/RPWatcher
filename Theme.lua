@@ -17,12 +17,17 @@ Theme.colors = {
     text = { 0.940, 0.910, 0.840, 1.00 },
     secondaryText = { 0.690, 0.675, 0.650, 1.00 },
     mutedText = { 0.500, 0.495, 0.500, 1.00 },
+    -- 1.2.0: status color roles swapped (Vorher is now gold/yellow, Unbekannt
+    -- is now neutral gray); shapes (eye/arrow/"?") are unchanged. These four
+    -- tuples are the single source of truth for the swap, since every
+    -- consumer (status bar, row backgrounds, accents, /rpw test, /rpw
+    -- stress) reads through Theme.colors rather than hardcoding a color.
     active = { 0.320, 0.820, 0.420, 1.00 },
-    inactive = { 0.560, 0.565, 0.590, 1.00 },
-    unknown = { 0.850, 0.680, 0.280, 1.00 },
+    inactive = { 0.850, 0.680, 0.280, 1.00 },
+    unknown = { 0.560, 0.565, 0.590, 1.00 },
     activeRow = { 0.055, 0.105, 0.070, 0.92 },
-    inactiveRow = { 0.040, 0.040, 0.047, 0.88 },
-    unknownRow = { 0.075, 0.060, 0.040, 0.88 },
+    inactiveRow = { 0.075, 0.060, 0.040, 0.88 },
+    unknownRow = { 0.040, 0.040, 0.047, 0.88 },
     hover = { 0.180, 0.135, 0.075, 0.62 },
     button = { 0.105, 0.085, 0.070, 0.96 },
     buttonHover = { 0.190, 0.135, 0.065, 1.00 },
@@ -174,6 +179,31 @@ function Theme:CreateStatusIndicator(parent, size)
     indicator.unknown:Hide()
 
     return indicator
+end
+
+-- 1.2.0: static color-role check for /rpw selftest. Compares against the
+-- literal 1.2.0 role-swap tuples rather than re-deriving them, so the test
+-- fails loudly if Theme.colors is ever edited without updating this check.
+function Theme:RunSelfTest()
+    local function colorsMatch(actual, expected)
+        return actual
+            and math.abs(actual[1] - expected[1]) < 0.001
+            and math.abs(actual[2] - expected[2]) < 0.001
+            and math.abs(actual[3] - expected[3]) < 0.001
+    end
+
+    local expectedInactive = { 0.850, 0.680, 0.280 }
+    local expectedUnknown = { 0.560, 0.565, 0.590 }
+    return {
+        {
+            name = "Theme: Vorher ist gold/gelb",
+            passed = colorsMatch(self.colors.inactive, expectedInactive),
+        },
+        {
+            name = "Theme: Unbekannt ist grau",
+            passed = colorsMatch(self.colors.unknown, expectedUnknown),
+        },
+    }
 end
 
 -- status is one of "active", "inactive", "unknown" (same keys already used by

@@ -11,11 +11,23 @@ local ROW_STRIDE = ROW_HEIGHT + layout.rowGap
 local watcherCount = 0
 local isResizing = false
 local currentBackgroundAlpha = 1
+-- 1.2.0 combat visibility: purely transient, never persisted. The desired
+-- manual visibility (RPWatcherDB.window.shown, via IsManuallyShown) already
+-- survives combat untouched, so this flag only needs to say "suppress
+-- actual visibility right now" -- no separate "shown before combat" bookkeeping
+-- is needed on top of it. See computeActualVisibility below for how the two
+-- combine.
+local combatSuppressed = false
 
 local frame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
 frame:SetSize(1, 1)
 frame:SetPoint("CENTER")
-frame:SetFrameStrata("DIALOG")
+-- 1.2.0: LOW keeps RPWatcher above the game world but behind Blizzard and
+-- addon windows (character pane, map, bags, etc.). Nothing in this file may
+-- call SetFrameStrata/SetFrameLevel/Raise on this frame afterward; see
+-- Minimap.lua's button strata (a separate, unrelated frame) for the only
+-- other strata call in the addon.
+frame:SetFrameStrata("LOW")
 frame:SetMovable(true)
 frame:SetResizable(true)
 frame:EnableMouse(true)
@@ -586,9 +598,24 @@ function UI:IsManuallyShown()
     return RPWatcher.Settings:IsWindowManuallyShown()
 end
 
+-- Pure decision function (no frame/DB access) so /rpw selftest can exercise
+-- every combination without touching the real window, RPWatcherDB, or
+-- combat state. combatSuppressed always wins: a combat-hidden window never
+-- shows regardless of the other three inputs.
+local function computeActualVisibility(manuallyShown, autoHideEnabled, watcherCount, isCombatSuppressed)
+    if isCombatSuppressed then
+        return false
+    end
+    return manuallyShown and (not autoHideEnabled or watcherCount > 0) and true or false
+end
+
 function UI:UpdateActualVisibility()
-    local shouldShow = self:IsManuallyShown()
-        and (not RPWatcher.Settings:IsAutoHideEnabled() or watcherCount > 0)
+    local shouldShow = computeActualVisibility(
+        self:IsManuallyShown(),
+        RPWatcher.Settings:IsAutoHideEnabled(),
+        watcherCount,
+        combatSuppressed
+    )
 
     local wasShown = frame:IsShown()
     if shouldShow then
@@ -616,12 +643,47 @@ function UI:SetShown(isShown)
     self:SetManualVisibility(isShown)
 end
 
+-- Only PLAYER_REGEN_DISABLED/ENABLED (below) and OnSettingChanged("hideInCombat")
+-- call this; it never runs on a ticker or OnUpdate.
+function UI:SetCombatSuppressed(shouldSuppress)
+    shouldSuppress = shouldSuppress and true or false
+    if combatSuppressed == shouldSuppress then
+        return
+    end
+    combatSuppressed = shouldSuppress
+    self:UpdateActualVisibility()
+end
+
+-- Bounded, event-triggered sync (addon load, option toggled) rather than a
+-- permanent poll, per AGENTS.md: UnitAffectingCombat("player") is read here
+-- and nowhere else in this file.
+function UI:SyncCombatState()
+    local shouldSuppress = RPWatcher.Settings:IsHideInCombatEnabled() and UnitAffectingCombat("player")
+    combatSuppressed = shouldSuppress and true or false
+    self:UpdateActualVisibility()
+end
+
+-- Dedicated frame, separate from the visible window's OnDragStart/OnDragStop
+-- scripts: PLAYER_REGEN_DISABLED only actually suppresses when hideInCombat
+-- is enabled; PLAYER_REGEN_ENABLED always clears the suppression.
+local combatEventFrame = CreateFrame("Frame")
+combatEventFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
+combatEventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+combatEventFrame:SetScript("OnEvent", function(_, event)
+    if event == "PLAYER_REGEN_DISABLED" then
+        UI:SetCombatSuppressed(RPWatcher.Settings and RPWatcher.Settings:IsHideInCombatEnabled())
+    elseif event == "PLAYER_REGEN_ENABLED" then
+        UI:SetCombatSuppressed(false)
+    end
+end)
+
 function UI:Initialize()
     if RPWatcher.Scanner then
         RPWatcher.Scanner:SetChangeCallback(function()
             UI:RefreshWatcherList()
         end)
     end
+    self:SyncCombatState()
 end
 
 function UI:RefreshWatcherList()
@@ -703,6 +765,8 @@ function UI:OnSettingChanged(settingName)
         self:RefreshWatcherList()
     elseif settingName == "visibility" or settingName == "autoHideWhenEmpty" then
         self:UpdateActualVisibility()
+    elseif settingName == "hideInCombat" then
+        self:SyncCombatState()
     elseif settingName == "unknownRetentionSeconds" then
         return
     elseif settingName == "showMinimapButton" then
@@ -714,6 +778,40 @@ end
 
 function UI:RestoreState()
     self:ApplySettings()
+end
+
+-- 1.2.0 selftest for /rpw selftest. computeActualVisibility is pure (no
+-- frame/DB/combat access), so these cases run without touching the real
+-- window, RPWatcherDB, or actual combat state. Case numbers refer to the
+-- 1.2.0 task's "Combat" list; case 18 (Scanner/Timer keep running in combat)
+-- is a static guarantee -- no combat check was added to Scanner.lua -- and
+-- isn't runtime-tested here.
+function UI:RunSelfTest()
+    local results = {}
+    local function check(name, actual, expected)
+        results[#results + 1] = {
+            name = name,
+            passed = actual == expected,
+            detail = tostring(actual) .. " (erwartet " .. tostring(expected) .. ")",
+        }
+    end
+
+    check("Combat: Kampfbeginn unterdrückt ein sichtbares Fenster",
+        computeActualVisibility(true, false, 1, true), false)
+    check("Combat: manuell geschlossen bleibt nach Kampfende geschlossen",
+        computeActualVisibility(false, false, 1, false), false)
+    check("Combat: im Kampf angefordertes Öffnen erscheint nach Kampfende",
+        computeActualVisibility(true, false, 1, false), true)
+    check("Combat: im Kampf angefordertes Schließen bleibt nach Kampfende zu",
+        computeActualVisibility(false, false, 0, false), false)
+    check("Combat: Auto-Hide-When-Empty bleibt auch nach Kampfende maßgeblich",
+        computeActualVisibility(true, true, 0, false), false)
+    check("Combat: leere Liste und Kampf gemeinsam bleiben verborgen",
+        computeActualVisibility(true, true, 0, true), false)
+    check("UI: Hauptfenster verwendet Frame-Strata LOW",
+        frame:GetFrameStrata(), "LOW")
+
+    return results
 end
 
 -- Public module surface. The main frame remains private.

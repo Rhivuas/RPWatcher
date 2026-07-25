@@ -42,6 +42,39 @@ function Core:PrintHelp()
     print("  /rpw perf [on|off|reset|report] - Laufzeitdiagnose steuern")
     print("  /rpw plates - aktuelle Nameplate-Mengen diagnostizieren")
     print("  /rpw stress <25|50|100|200|clear> - synthetische Lastdaten verwalten")
+    print("  /rpw selftest - interne Prüfungen für Cache, Farben und Kampf-Sichtbarkeit ausführen")
+end
+
+-- 1.2.0: aggregates each module's own RunSelfTest() (Theme, Scanner, UI)
+-- rather than introducing a separate test system, mirroring how
+-- Performance:PrintReport()/Scanner:PrintNameplateDiagnostics() already
+-- report on their own module's state. All cases are synthetic and
+-- non-persistent; see each module's RunSelfTest for what it covers.
+function Core:RunSelfTest()
+    local allResults = {}
+    local function collect(module)
+        if module and module.RunSelfTest then
+            for _, result in ipairs(module:RunSelfTest()) do
+                allResults[#allResults + 1] = result
+            end
+        end
+    end
+    collect(RPWatcher.Theme)
+    collect(RPWatcher.Scanner)
+    collect(RPWatcher.UI)
+
+    local passCount, failCount = 0, 0
+    print("|cff66ccffRPWatcher Selbsttest|r")
+    for _, result in ipairs(allResults) do
+        if result.passed then
+            passCount = passCount + 1
+            print(("  |cff33ff33[OK]|r %s"):format(result.name))
+        else
+            failCount = failCount + 1
+            print(("  |cffff3333[FEHLER]|r %s%s"):format(result.name, result.detail and (" - " .. result.detail) or ""))
+        end
+    end
+    print(("|cff66ccffRPWatcher|r Selbsttest abgeschlossen: %d bestanden, %d fehlgeschlagen."):format(passCount, failCount))
 end
 
 function Core:HandleSlashCommand(message)
@@ -117,6 +150,8 @@ function Core:HandleSlashCommand(message)
                 print("|cff66ccffRPWatcher|r: Verwendung: /rpw stress 25|50|100|200|clear")
             end
         end
+    elseif command == "selftest" then
+        self:RunSelfTest()
     else
         print("|cff66ccffRPWatcher|r: Unbekannter Befehl.")
         self:PrintHelp()

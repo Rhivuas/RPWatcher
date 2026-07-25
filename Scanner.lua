@@ -134,6 +134,13 @@ local function countEntries(target)
     return count
 end
 
+-- 1.2.0 audit (dead players/ghosts): the reported suspicion could not be
+-- reproduced. Confirmed by static review that this function contains no
+-- UnitIsDead/UnitIsDeadOrGhost/UnitIsGhost/UnitIsConnected check and no other
+-- reaction- or target-based implicit filter beyond the ones below; a dead or
+-- ghosted friendly player with a visible nameplate qualifies exactly like any
+-- other friendly player. No speculative death/ghost filter was added -- see
+-- release/TEST_MATRIX_1.2.0.md for the manual death/ghost/resurrection cases.
 local function getQualifiedUnit(unitToken)
     if not isValidUnitToken(unitToken) or not UnitExists(unitToken) then
         return nil, nil
@@ -193,10 +200,19 @@ local function createWatcher(guid, unitToken, fullName, now)
     return watcher
 end
 
+-- 1.2.0 watcher continuity (see setWatcherUnknown below for the state this
+-- reads). A brief nameplate loss must not restart the active/inactive timer:
+-- only a genuinely new confirmed observation does. "Genuinely new" means the
+-- watcher was NOT already active (directly, or active right before its most
+-- recent unknown phase) when this transition fires.
 local function setWatcherActive(watcher, now)
     if watcher.observationStatus ~= Scanner.STATUS_ACTIVE then
+        local continuesActivePhase = watcher.observationStatus == Scanner.STATUS_UNKNOWN
+            and watcher.statusBeforeUnknown == Scanner.STATUS_ACTIVE
+            and watcher.targetStartedAtBeforeUnknown ~= nil
+
         watcher.observationStatus = Scanner.STATUS_ACTIVE
-        watcher.targetStartedAt = now
+        watcher.targetStartedAt = continuesActivePhase and watcher.targetStartedAtBeforeUnknown or now
         markDataChanged(watcher, now)
         if not watcher.isTest and RPWatcher.Performance then
             RPWatcher.Performance:RecordStatusChange()
@@ -205,22 +221,60 @@ local function setWatcherActive(watcher, now)
     watcher.lastTargetConfirmedAt = now
 end
 
+-- Mirrors setWatcherActive: a watcher that was already "Vorher" before a
+-- brief unknown phase keeps its original targetLostAt (no reset). A watcher
+-- that was "Aktuell" before going unknown and returns without the target
+-- becomes "Vorher" for the first time; the exact moment of loss during the
+-- invisible phase was never observed, so the conservative, documented choice
+-- is nameplateHiddenAt (the start of the visibility loss) rather than "now"
+-- (the moment of reappearance), which would overstate how recently it lost
+-- the target. A direct Aktuell -> Vorher transition (no intervening unknown
+-- phase) is unaffected and keeps using "now", as before 1.2.0.
 local function setWatcherInactive(watcher, now)
     if watcher.observationStatus == Scanner.STATUS_INACTIVE then
         return
     end
 
+    local wasUnknown = watcher.observationStatus == Scanner.STATUS_UNKNOWN
+    local continuesInactivePhase = wasUnknown
+        and watcher.statusBeforeUnknown == Scanner.STATUS_INACTIVE
+        and watcher.targetLostAtBeforeUnknown ~= nil
+    local newlyInactiveAfterUnknownActive = wasUnknown
+        and watcher.statusBeforeUnknown == Scanner.STATUS_ACTIVE
+
     watcher.observationStatus = Scanner.STATUS_INACTIVE
-    watcher.targetLostAt = now
+    if continuesInactivePhase then
+        watcher.targetLostAt = watcher.targetLostAtBeforeUnknown
+    elseif newlyInactiveAfterUnknownActive then
+        watcher.targetLostAt = watcher.nameplateHiddenAt or now
+    else
+        watcher.targetLostAt = now
+    end
     markDataChanged(watcher, now)
     if not watcher.isTest and RPWatcher.Performance then
         RPWatcher.Performance:RecordStatusChange()
     end
 end
 
+-- Captures just enough volatile state to tell, on return from Unbekannt,
+-- whether it was Aktuell or Vorher beforehand, and that phase's original
+-- timestamp (targetStartedAt or targetLostAt respectively) -- see
+-- setWatcherActive/setWatcherInactive above for how it is consumed. Only
+-- captured on the transition INTO Unbekannt so it always reflects the phase
+-- immediately preceding the current invisibility, never stale data from an
+-- earlier cycle. Purely runtime state on the same watcher record already
+-- excluded from RPWatcherDB; no second cache or state machine is added.
 local function setWatcherUnknown(watcher, now)
     if watcher.observationStatus == Scanner.STATUS_UNKNOWN and not watcher.isVisible then
         return
+    end
+
+    if watcher.observationStatus ~= Scanner.STATUS_UNKNOWN then
+        watcher.statusBeforeUnknown = watcher.observationStatus
+        watcher.targetStartedAtBeforeUnknown = watcher.observationStatus == Scanner.STATUS_ACTIVE
+            and watcher.targetStartedAt or nil
+        watcher.targetLostAtBeforeUnknown = watcher.observationStatus == Scanner.STATUS_INACTIVE
+            and watcher.targetLostAt or nil
     end
 
     watcher.observationStatus = Scanner.STATUS_UNKNOWN
@@ -803,6 +857,105 @@ function Scanner:GetWatcherStatusCounts()
         end
     end
     return activeCount, inactiveCount, unknownCount
+end
+
+-- 1.2.0 selftest for the watcher-continuity fix above. Drives the real,
+-- private setWatcherActive/Inactive/Unknown functions directly (same
+-- closure, no parallel test system) against synthetic watcher tables that
+-- are never inserted into watchersByGUID, so nothing here is visible in the
+-- UI, ever reaches RPWatcherDB, or calls any Unit-/TRP3-API with a
+-- synthetic identity (AGENTS.md). Case numbers refer to the 1.2.0 task's
+-- "Cache und Timer" list.
+function Scanner:RunSelfTest()
+    local results = {}
+    local now = GetTime()
+
+    local function assertCase(name, passed, detail)
+        results[#results + 1] = { name = name, passed = passed and true or false, detail = detail }
+    end
+
+    -- Case 1 + 7 + 8: Aktuell -> Unbekannt -> Aktuell führt targetStartedAt
+    -- fort; RP-Name/Profilstatus bleiben nur im Laufzeitdatensatz erhalten;
+    -- keine Selftest-GUID landet in RPWatcherDB.
+    do
+        local guid = "RPWATCHER-SELFTEST-A"
+        local originalStart = now - 12
+        local watcher = {
+            guid = guid, name = "[Selftest] Fortsetzung", isTest = true,
+            observationStatus = self.STATUS_ACTIVE, targetStartedAt = originalStart,
+            isVisible = true, unitToken = nil, lastChangedAt = originalStart,
+            rpName = "[Selftest] RP-Name", hasTRP3Profile = true,
+        }
+        setWatcherUnknown(watcher, now + 1)
+        setWatcherActive(watcher, now + 6)
+        assertCase("Cache: Aktuell->Unbekannt->Aktuell führt targetStartedAt fort",
+            watcher.targetStartedAt == originalStart,
+            ("targetStartedAt=%.2f, erwartet %.2f"):format(watcher.targetStartedAt, originalStart))
+        assertCase("Cache: RP-Name/Profilstatus bleiben im Laufzeitdatensatz erhalten",
+            watcher.rpName == "[Selftest] RP-Name" and watcher.hasTRP3Profile == true)
+        assertCase("Datenschutz: Selftest-GUID landet nicht in RPWatcherDB",
+            type(RPWatcherDB) ~= "table" or RPWatcherDB[guid] == nil)
+    end
+
+    -- Case 2: Aktuell -> Unbekannt -> Vorher führt nicht zu einem neuen
+    -- Watcher und verwendet den konservativen Sichtverlustzeitpunkt.
+    do
+        local watcher = {
+            guid = "RPWATCHER-SELFTEST-B", name = "[Selftest] Konservativ", isTest = true,
+            observationStatus = self.STATUS_ACTIVE, targetStartedAt = now - 20,
+            isVisible = true, unitToken = nil, lastChangedAt = now - 20,
+        }
+        local hiddenAt = now + 1
+        setWatcherUnknown(watcher, hiddenAt)
+        setWatcherInactive(watcher, now + 9)
+        assertCase("Cache: Aktuell->Unbekannt->Vorher nutzt den Sichtverlustzeitpunkt",
+            watcher.targetLostAt == hiddenAt,
+            ("targetLostAt=%.2f, erwartet %.2f"):format(watcher.targetLostAt, hiddenAt))
+    end
+
+    -- Case 3: Vorher -> Unbekannt -> Vorher behält seinen bisherigen
+    -- Zeitbezug (kein Timer-Reset).
+    do
+        local originalLost = now - 30
+        local watcher = {
+            guid = "RPWATCHER-SELFTEST-C", name = "[Selftest] Vorher-Kontinuität", isTest = true,
+            observationStatus = self.STATUS_INACTIVE, targetLostAt = originalLost,
+            isVisible = true, unitToken = nil, lastChangedAt = originalLost,
+        }
+        setWatcherUnknown(watcher, now + 1)
+        setWatcherInactive(watcher, now + 7)
+        assertCase("Cache: Vorher->Unbekannt->Vorher behält seinen Zeitbezug",
+            watcher.targetLostAt == originalLost,
+            ("targetLostAt=%.2f, erwartet %.2f"):format(watcher.targetLostAt, originalLost))
+    end
+
+    -- Case 4: Vorher -> Unbekannt -> neu aktuell beginnt eine neue
+    -- bestätigte aktive Phase (Timer beginnt bei der Wiederkehr).
+    do
+        local watcher = {
+            guid = "RPWATCHER-SELFTEST-D", name = "[Selftest] Neue Phase", isTest = true,
+            observationStatus = self.STATUS_INACTIVE, targetLostAt = now - 40,
+            isVisible = true, unitToken = nil, lastChangedAt = now - 40,
+        }
+        setWatcherUnknown(watcher, now + 1)
+        local reactivatedAt = now + 8
+        setWatcherActive(watcher, reactivatedAt)
+        assertCase("Cache: Vorher->Unbekannt->Aktuell startet eine neue aktive Phase",
+            watcher.targetStartedAt == reactivatedAt,
+            ("targetStartedAt=%.2f, erwartet %.2f"):format(watcher.targetStartedAt, reactivatedAt))
+    end
+
+    -- Case 5: Ablauf der Aufbewahrungsdauer entfernt den Datensatz. Prüft
+    -- dieselbe Formel wie Scan()'s Ablauflogik, ohne watchersByGUID selbst
+    -- zu berühren.
+    do
+        local retention = RPWatcher.Settings and RPWatcher.Settings:GetUnknownRetentionSeconds() or 60
+        local hiddenAt = now - retention - 1
+        local wouldExpire = (now - hiddenAt) >= retention
+        assertCase("Cache: Ablauf der Aufbewahrungsdauer entfernt den Datensatz", wouldExpire)
+    end
+
+    return results
 end
 
 function Scanner:Shutdown()

@@ -63,3 +63,7 @@
 - Virtualisierte UI-Listen dürfen niemals getrennte Zähler und veraltete Datensnapshots für dieselbe Renderoperation verwenden.
 - Synchrone UI-Ereignisse wie OnSizeChanged müssen während eines ausstehenden Datenrefreshs sicher zurückkehren.
 - Öffentliche Zeilenformatierer dürfen keine nil-Datensätze erhalten.
+- Das Hauptfenster verwendet grundsätzlich die Frame-Strata LOW und hebt sich durch Anklicken, Öffnen oder Datenaktualisierungen niemals selbst auf eine höhere Strata an.
+- Innerhalb der eingestellten Aufbewahrungsdauer wird derselbe GUID-basierte Watcher-Datensatz nach einem kurzen Sichtverlust weiterverwendet; ein bestehender Aktuell- oder Vorher-Zeitbezug wird dabei nicht grundlos zurückgesetzt.
+- Kampf-Sichtbarkeitsunterdrückung ist rein temporär, betrifft ausschließlich die tatsächliche Anzeige des Hauptfensters und verändert nicht den gespeicherten manuellen Sichtbarkeitswunsch. Scanner, Watcher-Zeitmessung und TRP3-Integration laufen im Kampf unverändert weiter.
+- Module können eine eigene RunSelfTest()-Funktion für /rpw selftest bereitstellen; es wird kein paralleles Testsystem eingeführt.

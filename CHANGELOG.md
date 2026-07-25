@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.2.0
+
+- Hauptfenster von `DIALOG` auf die niedrige Frame-Ebene `LOW` umgestellt: RPWatcher bleibt über der Spielwelt sichtbar, tritt aber nicht mehr vor Charakterfenster, Weltkarte, Taschen oder andere Blizzard- und Addonfenster. Kein `Raise()` und kein dynamischer Strata-Wechsel mehr.
+- Statusfarben von Vorher und Unbekannt in `Theme.lua` getauscht: Vorher ist jetzt gold/gelb, Unbekannt ist jetzt grau (Aktuell bleibt grün). Symbole (Auge, Verlaufspfeil, ASCII-Fragezeichen) und Zeittexte sind unverändert; Farbe bleibt weiterhin nicht das einzige Unterscheidungsmerkmal.
+- Bestehenden GUID-basierten Watcher-Laufzeitcache in `Scanner.lua` erweitert: Ein kurzer Verlust der Nameplate setzt die laufende „Aktuell“- oder „Vorher“-Zeitmessung eines bereits erfassten Watchers innerhalb der eingestellten Aufbewahrungsdauer nicht mehr grundlos zurück. Kehrt ein zuvor aktueller Watcher ohne fortbestehendes Target zurück, wird der Verlustzeitpunkt konservativ auf den Beginn des Sichtverlusts gesetzt statt auf den Zeitpunkt der Wiederkehr. Der Cache bleibt vollständig flüchtig; es werden weiterhin keine fremden GUIDs, Namen, RP-Namen oder Profildaten in `RPWatcherDB` gespeichert.
+- Neue Option „Im Kampf automatisch ausblenden“ (standardmäßig aus) ergänzt: Nur das sichtbare RPWatcher-Hauptfenster wird während eines Kampfes tatsächlich verborgen; Scanner, Watcher-Zeitmessung und die optionale TRP3-Integration laufen im Kampf unverändert weiter. Der gespeicherte manuelle Sichtbarkeitswunsch bleibt von der Kampf-Unterdrückung unberührt und wird nach Kampfende unter Berücksichtigung der Auto-Ausblendung bei leerer Liste neu ausgewertet. Kein neuer Ticker, kein permanentes `OnUpdate`.
+- Optionsseite strukturell in die vier Bereiche Fenster, Anzeigeverhalten, Integration und Zugriff überarbeitet, in einen Scrollbereich für robuste Darstellung bei verschiedenen UI-Skalierungen eingebettet und mit konsistenten Abständen versehen. „Unbekannte Watcher behalten“ heißt jetzt „Unsichtbare Watcher behalten“ und enthält einen Hilfetext zur Zeitfortführung bei kurzem Sichtverlust. „Fenster zurücksetzen“ setzt weiterhin ausschließlich Fensterdarstellung und -position zurück.
+- Datenbankschema kontrolliert von Version 3 auf Version 4 erhöht, um die neue Kampf-Option zu speichern; bestehende 1.1.1-Einstellungen bleiben vollständig erhalten, `hideInCombat` erhält automatisch den Standardwert „aus“.
+- Bestehende Spielerqualifizierung in `Scanner.lua` statisch auf Tote-Spieler- und Geister-Ausschlüsse geprüft: Der gemeldete Verdacht konnte nicht reproduziert werden, es wurde kein UnitIsDead-/UnitIsDeadOrGhost-Ausschluss gefunden, und es wurde kein spekulativer Filter ergänzt. Tod, Geist und Wiederbelebung sind Teil der manuellen Testmatrix.
+- Neuer Diagnosebefehl `/rpw selftest` ergänzt: führt nicht persistente interne Prüfungen für Watcher-Zeitfortführung, Statusfarben und Kampf-Sichtbarkeitslogik aus und meldet das Ergebnis im Chat, ohne bestehende Befehle zu verändern.
+- Nameplate-Erfassung, 0,25-Sekunden-Scanner, Fünf-Sekunden-Integritätsabgleich, TRP3-Kernlogik, UI-Virtualisierung, die 1.1.1-nil-Absicherung, Minimap-Drag, Performance-Diagnose und alle Datenschutzprinzipien bleiben unverändert.
+
 ## 1.1.1
 
 - Hotfix: Lua-Laufzeitfehler behoben, bei dem die virtualisierte Watcher-Liste beim Übergang von einer leeren Liste zum ersten echten Watcher gelegentlich mit einem nil-Watcher aufgerufen wurde.
