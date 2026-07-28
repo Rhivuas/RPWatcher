@@ -1,13 +1,17 @@
 ## Interface: 120007
 ## Title: RPWatcher
-## Notes: Zeigt freundliche Spieler mit sichtbaren Nameplates nach aktuellen oder früheren Target-Vorgängen; optionale Total-RP-3-Integration.
+## Notes: Shows friendly players with visible nameplates after they have targeted you, currently or previously; optional Total RP 3 integration.
+## Notes-deDE: Zeigt freundliche Spieler mit sichtbaren Nameplates nach aktuellen oder früheren Target-Vorgängen; optionale Total-RP-3-Integration.
 ## Author: Mercia
-## Version: 1.2.0
+## Version: 1.3.0
 ## OptionalDeps: totalRP3
 ## SavedVariables: RPWatcherDB
 ## X-License: MIT
 ## IconTexture: Interface\AddOns\RPWatcher\Media\RPWatcherIcon
 
+Locale/enUS.lua
+Locale/deDE.lua
+Localization.lua
 Core.lua
 Performance.lua
 Theme.lua

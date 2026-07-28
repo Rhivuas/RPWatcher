@@ -3,6 +3,8 @@ local _, RPWatcher = ...
 local Performance = {}
 RPWatcher.Performance = Performance
 
+local L = RPWatcher.L
+
 local enabled = false
 local startedAt
 local stoppedAt
@@ -46,17 +48,17 @@ end
 local function formatDuration(seconds)
     seconds = math.max(0, seconds or 0)
     if seconds < 60 then
-        return ("%.1f Sek."):format(seconds)
+        return RPWatcher.Localization:Format("PERF_DURATION_SECONDS", seconds)
     end
 
     local minutes = math.floor(seconds / 60)
     local remainingSeconds = math.floor(seconds % 60)
     if minutes < 60 then
-        return ("%d Min. %d Sek."):format(minutes, remainingSeconds)
+        return RPWatcher.Localization:Format("PERF_DURATION_MINUTES_SECONDS", minutes, remainingSeconds)
     end
 
     local hours = math.floor(minutes / 60)
-    return ("%d Std. %d Min."):format(hours, minutes % 60)
+    return RPWatcher.Localization:Format("PERF_DURATION_HOURS_MINUTES", hours, minutes % 60)
 end
 
 function Performance:Initialize()
@@ -149,10 +151,10 @@ function Performance:GetDuration()
 end
 
 function Performance:PrintHelp()
-    print("  /rpw perf on - Messwerte zurücksetzen und Messung aktivieren")
-    print("  /rpw perf off - Messung anhalten und Werte behalten")
-    print("  /rpw perf reset - Messwerte zurücksetzen")
-    print("  /rpw perf report - kompakten Bericht ausgeben")
+    print("  " .. L.PERF_HELP_ON)
+    print("  " .. L.PERF_HELP_OFF)
+    print("  " .. L.PERF_HELP_RESET)
+    print("  " .. L.PERF_HELP_REPORT)
 end
 
 function Performance:PrintReport()
@@ -169,40 +171,41 @@ function Performance:PrintReport()
     end
 
     local average = metrics.scanCount > 0 and metrics.totalScanMilliseconds / metrics.scanCount or 0
-    print("|cff66ccffRPWatcher Performance|r")
-    print("  Messung: " .. (enabled and "an" or "aus") .. " · Dauer: " .. formatDuration(self:GetDuration()))
-    print(("  Scans: %d · Kandidaten geprüft: %d"):format(metrics.scanCount, metrics.candidatesChecked))
-    print(("  Scanzeit gesamt: %.3f ms · Ø: %.3f ms · Maximum: %.3f ms"):format(metrics.totalScanMilliseconds, average, metrics.maximumScanMilliseconds))
-    print(("  Rohe Nameplate-Frames: %d · Tokens aufgelöst: %d"):format(rawFrames, resolvedTokens))
-    print(("  Verwaltete Tokens: %d · Freundliche Kandidaten: %d"):format(managedTokens, candidates))
-    print(("  Watcher: %d echt · %d Test/Stress"):format(realWatchers, testWatchers))
-    print(("  Statuswechsel: %d · erzeugt: %d · entfernt: %d"):format(metrics.statusChanges, metrics.watchersCreated, metrics.watchersRemoved))
-    print(("  UI-Aktualisierungen: %d Daten · %d Zeit"):format(metrics.uiDataUpdates, metrics.uiTimeUpdates))
-    print(("  TRP3-Anfragen: %d versendet · %d übersprungen/gedrosselt"):format(metrics.trp3RequestsSent, metrics.trp3RequestsSkipped))
+    local Localization = RPWatcher.Localization
+    print("|cff66ccff" .. L.PERF_REPORT_HEADER .. "|r")
+    print("  " .. Localization:Format("PERF_STATUS_LINE", enabled and L.PERF_STATUS_ON or L.PERF_STATUS_OFF, formatDuration(self:GetDuration())))
+    print("  " .. Localization:Format("PERF_SCANS_LINE", metrics.scanCount, metrics.candidatesChecked))
+    print("  " .. Localization:Format("PERF_SCANTIME_LINE", metrics.totalScanMilliseconds, average, metrics.maximumScanMilliseconds))
+    print("  " .. Localization:Format("PERF_RAWFRAMES_LINE", rawFrames, resolvedTokens))
+    print("  " .. Localization:Format("PERF_MANAGEDTOKENS_LINE", managedTokens, candidates))
+    print("  " .. Localization:Format("PERF_WATCHERS_LINE", realWatchers, testWatchers))
+    print("  " .. Localization:Format("PERF_CHANGES_LINE", metrics.statusChanges, metrics.watchersCreated, metrics.watchersRemoved))
+    print("  " .. Localization:Format("PERF_UIUPDATES_LINE", metrics.uiDataUpdates, metrics.uiTimeUpdates))
+    print("  " .. Localization:Format("PERF_TRP3REQUESTS_LINE", metrics.trp3RequestsSent, metrics.trp3RequestsSkipped))
 end
 
 function Performance:HandleCommand(argument)
     argument = type(argument) == "string" and argument:match("^%s*(.-)%s*$"):lower() or ""
     if argument == "" then
-        print("|cff66ccffRPWatcher|r: Performance-Messung ist " .. (enabled and "aktiv." or "deaktiviert."))
+        print("|cff66ccffRPWatcher|r: " .. (enabled and L.PERF_COMMAND_STATUS_ACTIVE or L.PERF_COMMAND_STATUS_DISABLED))
         self:PrintHelp()
     elseif argument == "on" then
         if type(debugprofilestop) ~= "function" then
-            print("|cff66ccffRPWatcher|r: Die Performance-Messfunktion ist nicht verfügbar.")
+            print("|cff66ccffRPWatcher|r: " .. L.PERF_UNAVAILABLE)
             return
         end
         self:SetEnabled(true)
-        print("|cff66ccffRPWatcher|r: Performance-Messung aktiviert und zurückgesetzt.")
+        print("|cff66ccffRPWatcher|r: " .. L.PERF_ENABLED)
     elseif argument == "off" then
         self:SetEnabled(false)
-        print("|cff66ccffRPWatcher|r: Performance-Messung deaktiviert; Messwerte bleiben erhalten.")
+        print("|cff66ccffRPWatcher|r: " .. L.PERF_DISABLED_KEEP)
     elseif argument == "reset" then
         self:Reset()
-        print("|cff66ccffRPWatcher|r: Performance-Messwerte wurden zurückgesetzt.")
+        print("|cff66ccffRPWatcher|r: " .. L.PERF_RESET_DONE)
     elseif argument == "report" then
         self:PrintReport()
     else
-        print("|cff66ccffRPWatcher|r: Unbekannter perf-Befehl.")
+        print("|cff66ccffRPWatcher|r: " .. L.PERF_UNKNOWN_COMMAND)
         self:PrintHelp()
     end
 end

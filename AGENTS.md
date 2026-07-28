@@ -67,3 +67,11 @@
 - Innerhalb der eingestellten Aufbewahrungsdauer wird derselbe GUID-basierte Watcher-Datensatz nach einem kurzen Sichtverlust weiterverwendet; ein bestehender Aktuell- oder Vorher-Zeitbezug wird dabei nicht grundlos zurückgesetzt.
 - Kampf-Sichtbarkeitsunterdrückung ist rein temporär, betrifft ausschließlich die tatsächliche Anzeige des Hauptfensters und verändert nicht den gespeicherten manuellen Sichtbarkeitswunsch. Scanner, Watcher-Zeitmessung und TRP3-Integration laufen im Kampf unverändert weiter.
 - Module können eine eigene RunSelfTest()-Funktion für /rpw selftest bereitstellen; es wird kein paralleles Testsystem eingeführt.
+- Sämtliche regulär sichtbaren Laufzeittexte müssen über die zentrale Lokalisierung (RPWatcher.L / RPWatcher.Localization) laufen.
+- enUS ist der vollständige Basiskatalog und technische Fallback.
+- Jede unterstützte Locale muss denselben Schlüsselsatz und dieselben Formatplatzhalter wie enUS besitzen.
+- Sprachwahl darf keine technische Logik beeinflussen.
+- Lokalisierte Blizzard-Strings dürfen nicht für API- oder Statusprüfungen verwendet werden.
+- Keine Locale-Auswahl oder fremde Textdaten in SavedVariables.
+- Neue sichtbare Texte müssen gleichzeitig in enUS und deDE ergänzt werden.
+- RPWatcher.L darf nach dem Laden der Funktionsmodule nicht durch eine neue Tabelle ersetzt werden.

@@ -3,6 +3,8 @@ local _, RPWatcher = ...
 local Scanner = {}
 RPWatcher.Scanner = Scanner
 
+local L = RPWatcher.L
+
 Scanner.STATUS_ACTIVE = "ACTIVE"
 Scanner.STATUS_INACTIVE = "INACTIVE"
 Scanner.STATUS_UNKNOWN = "UNKNOWN"
@@ -36,10 +38,10 @@ local TEST_GUID_ACTIVE = "RPWATCHER-TEST-ACTIVE"
 local TEST_GUID_INACTIVE = "RPWATCHER-TEST-INACTIVE"
 local TEST_GUID_UNKNOWN = "RPWATCHER-TEST-UNKNOWN"
 local STRESS_GUID_PREFIX = "RPWATCHER-STRESS-"
-local STRESS_RP_NAME_PATTERNS = {
-    "Bo %03d",
-    "Mira Silberhain %03d",
-    "Lady Aveline von den Nebelgärten zu Sturmwind %03d",
+local STRESS_RP_NAME_KEYS = {
+    "STRESS_RP_NAME_SHORT",
+    "STRESS_RP_NAME_MEDIUM",
+    "STRESS_RP_NAME_LONG",
 }
 
 local STATUS_ORDER = {
@@ -615,7 +617,7 @@ function Scanner:AddTestData()
     local now = GetTime()
     watchersByGUID[TEST_GUID_ACTIVE] = {
         guid = TEST_GUID_ACTIVE,
-        name = "[Test] Aktuell",
+        name = L.TESTDATA_WATCHER_ACTIVE,
         unitToken = nil,
         isVisible = true,
         observationStatus = self.STATUS_ACTIVE,
@@ -628,11 +630,11 @@ function Scanner:AddTestData()
         lastChangedAt = now - 12,
         isTest = true,
         hasTRP3Profile = false,
-        rpName = "[Test] Lady Aktuell",
+        rpName = L.TESTDATA_WATCHER_ACTIVE,
     }
     watchersByGUID[TEST_GUID_INACTIVE] = {
         guid = TEST_GUID_INACTIVE,
-        name = "[Test] Vorher",
+        name = L.TESTDATA_WATCHER_PREVIOUS,
         unitToken = nil,
         isVisible = true,
         observationStatus = self.STATUS_INACTIVE,
@@ -645,11 +647,11 @@ function Scanner:AddTestData()
         lastChangedAt = now - 8,
         isTest = true,
         hasTRP3Profile = false,
-        rpName = "[Test] Lord Vorher",
+        rpName = L.TESTDATA_WATCHER_PREVIOUS,
     }
     watchersByGUID[TEST_GUID_UNKNOWN] = {
         guid = TEST_GUID_UNKNOWN,
-        name = "[Test] Unbekannt",
+        name = L.TESTDATA_WATCHER_UNKNOWN,
         unitToken = nil,
         isVisible = false,
         observationStatus = self.STATUS_UNKNOWN,
@@ -703,8 +705,8 @@ function Scanner:AddStressData(count)
         local elapsed = (index % 55) + 1
         watchersByGUID[guid] = {
             guid = guid,
-            name = ("[Stress] Spieler %03d"):format(index),
-            rpName = string.format(STRESS_RP_NAME_PATTERNS[((index - 1) % #STRESS_RP_NAME_PATTERNS) + 1], index),
+            name = RPWatcher.Localization:Format("STRESS_WATCHER_NAME", index),
+            rpName = RPWatcher.Localization:Format(STRESS_RP_NAME_KEYS[((index - 1) % #STRESS_RP_NAME_KEYS) + 1], index),
             unitToken = nil,
             isVisible = status ~= self.STATUS_UNKNOWN,
             observationStatus = status,
@@ -822,17 +824,18 @@ end
 
 function Scanner:PrintNameplateDiagnostics()
     local snapshot = self:GetNameplateDiagnosticSnapshot()
-    print("|cff66ccffRPWatcher Nameplate-Diagnose|r")
-    print(("  Rohe Frames: %d · Token aufgelöst: %d"):format(snapshot.rawFrameCount, snapshot.resolvedTokenCount))
-    print(("  Tokenweg: GetUnit() %d · namePlateUnitToken-Fallback %d"):format(snapshot.getUnitTokenCount, snapshot.fallbackTokenCount))
-    print(("  Existierende Units: %d · Spieler: %d · Freundlich: %d"):format(snapshot.existingUnitCount, snapshot.playerUnitCount, snapshot.friendlyUnitCount))
-    print(("  Eigener Spieler: %d · Fehlende GUID: %d · Fehlender Name: %d"):format(snapshot.ownPlayerCount, snapshot.missingGUIDCount, snapshot.missingNameCount))
-    print(("  Verwaltete Tokens: %d · Qualifizierbare Units: %d · Verwaltete Kandidaten: %d"):format(
+    local Localization = RPWatcher.Localization
+    print("|cff66ccff" .. L.DIAG_NAMEPLATE_HEADER .. "|r")
+    print(Localization:Format("DIAG_RAW_FRAMES", snapshot.rawFrameCount, snapshot.resolvedTokenCount))
+    print(Localization:Format("DIAG_TOKEN_PATH", snapshot.getUnitTokenCount, snapshot.fallbackTokenCount))
+    print(Localization:Format("DIAG_EXISTING_UNITS", snapshot.existingUnitCount, snapshot.playerUnitCount, snapshot.friendlyUnitCount))
+    print(Localization:Format("DIAG_OWN_PLAYER", snapshot.ownPlayerCount, snapshot.missingGUIDCount, snapshot.missingNameCount))
+    print(Localization:Format("DIAG_MANAGED_TOKENS",
         snapshot.managedTokenCount,
         snapshot.qualifiedUnitCount,
         snapshot.candidateCount
     ))
-    print(("  Ablehnungen: kein Token %d · Unit fehlt %d · kein Spieler %d · nicht freundlich %d · eigener Spieler %d · GUID fehlt %d · Name fehlt %d"):format(
+    print(Localization:Format("DIAG_REJECTIONS",
         snapshot.missingTokenCount,
         snapshot.missingUnitCount,
         snapshot.nonPlayerCount,
@@ -869,9 +872,10 @@ end
 function Scanner:RunSelfTest()
     local results = {}
     local now = GetTime()
+    local Localization = RPWatcher.Localization
 
-    local function assertCase(name, passed, detail)
-        results[#results + 1] = { name = name, passed = passed and true or false, detail = detail }
+    local function assertCase(nameKey, passed, detail)
+        results[#results + 1] = { name = L[nameKey], passed = passed and true or false, detail = detail }
     end
 
     -- Case 1 + 7 + 8: Aktuell -> Unbekannt -> Aktuell führt targetStartedAt
@@ -888,12 +892,12 @@ function Scanner:RunSelfTest()
         }
         setWatcherUnknown(watcher, now + 1)
         setWatcherActive(watcher, now + 6)
-        assertCase("Cache: Aktuell->Unbekannt->Aktuell führt targetStartedAt fort",
+        assertCase("SELFTEST_CACHE_CONTINUE_ACTIVE",
             watcher.targetStartedAt == originalStart,
-            ("targetStartedAt=%.2f, erwartet %.2f"):format(watcher.targetStartedAt, originalStart))
-        assertCase("Cache: RP-Name/Profilstatus bleiben im Laufzeitdatensatz erhalten",
+            Localization:Format("SELFTEST_DETAIL_TARGET_STARTED", watcher.targetStartedAt, originalStart))
+        assertCase("SELFTEST_CACHE_RUNTIME_FIELDS",
             watcher.rpName == "[Selftest] RP-Name" and watcher.hasTRP3Profile == true)
-        assertCase("Datenschutz: Selftest-GUID landet nicht in RPWatcherDB",
+        assertCase("SELFTEST_PRIVACY_NO_SELFTEST_GUID",
             type(RPWatcherDB) ~= "table" or RPWatcherDB[guid] == nil)
     end
 
@@ -908,9 +912,9 @@ function Scanner:RunSelfTest()
         local hiddenAt = now + 1
         setWatcherUnknown(watcher, hiddenAt)
         setWatcherInactive(watcher, now + 9)
-        assertCase("Cache: Aktuell->Unbekannt->Vorher nutzt den Sichtverlustzeitpunkt",
+        assertCase("SELFTEST_CACHE_CONSERVATIVE_LOSS",
             watcher.targetLostAt == hiddenAt,
-            ("targetLostAt=%.2f, erwartet %.2f"):format(watcher.targetLostAt, hiddenAt))
+            Localization:Format("SELFTEST_DETAIL_TARGET_LOST", watcher.targetLostAt, hiddenAt))
     end
 
     -- Case 3: Vorher -> Unbekannt -> Vorher behält seinen bisherigen
@@ -924,9 +928,9 @@ function Scanner:RunSelfTest()
         }
         setWatcherUnknown(watcher, now + 1)
         setWatcherInactive(watcher, now + 7)
-        assertCase("Cache: Vorher->Unbekannt->Vorher behält seinen Zeitbezug",
+        assertCase("SELFTEST_CACHE_PREVIOUS_CONTINUITY",
             watcher.targetLostAt == originalLost,
-            ("targetLostAt=%.2f, erwartet %.2f"):format(watcher.targetLostAt, originalLost))
+            Localization:Format("SELFTEST_DETAIL_TARGET_LOST", watcher.targetLostAt, originalLost))
     end
 
     -- Case 4: Vorher -> Unbekannt -> neu aktuell beginnt eine neue
@@ -940,9 +944,9 @@ function Scanner:RunSelfTest()
         setWatcherUnknown(watcher, now + 1)
         local reactivatedAt = now + 8
         setWatcherActive(watcher, reactivatedAt)
-        assertCase("Cache: Vorher->Unbekannt->Aktuell startet eine neue aktive Phase",
+        assertCase("SELFTEST_CACHE_NEW_ACTIVE_PHASE",
             watcher.targetStartedAt == reactivatedAt,
-            ("targetStartedAt=%.2f, erwartet %.2f"):format(watcher.targetStartedAt, reactivatedAt))
+            Localization:Format("SELFTEST_DETAIL_TARGET_STARTED", watcher.targetStartedAt, reactivatedAt))
     end
 
     -- Case 5: Ablauf der Aufbewahrungsdauer entfernt den Datensatz. Prüft
@@ -952,7 +956,7 @@ function Scanner:RunSelfTest()
         local retention = RPWatcher.Settings and RPWatcher.Settings:GetUnknownRetentionSeconds() or 60
         local hiddenAt = now - retention - 1
         local wouldExpire = (now - hiddenAt) >= retention
-        assertCase("Cache: Ablauf der Aufbewahrungsdauer entfernt den Datensatz", wouldExpire)
+        assertCase("SELFTEST_CACHE_RETENTION_EXPIRY", wouldExpire)
     end
 
     return results

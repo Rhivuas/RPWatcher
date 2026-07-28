@@ -6,6 +6,7 @@ RPWatcher.UI = UI
 local Theme = RPWatcher.Theme
 local colors = Theme.colors
 local layout = Theme.layout
+local L = RPWatcher.L
 local ROW_HEIGHT = layout.rowHeight
 local ROW_STRIDE = ROW_HEIGHT + layout.rowGap
 local watcherCount = 0
@@ -65,7 +66,7 @@ lockIndicator:SetSize(58, 22)
 lockIndicator:EnableMouse(true)
 lockIndicator.text = lockIndicator:CreateFontString(nil, "OVERLAY", Theme.fonts.small)
 lockIndicator.text:SetAllPoints()
-lockIndicator.text:SetText("Gesperrt")
+lockIndicator.text:SetText(L.WINDOW_LOCKED)
 Theme:SetFontColor(lockIndicator.text, colors.accent)
 lockIndicator:Hide()
 
@@ -118,9 +119,9 @@ Theme:SetStatusIndicator(activeSummarySlot.indicator, "active")
 Theme:SetStatusIndicator(inactiveSummarySlot.indicator, "inactive")
 Theme:SetStatusIndicator(unknownSummarySlot.indicator, "unknown")
 
-activeSummarySlot.label:SetText("0 aktuell")
-inactiveSummarySlot.label:SetText("0 vorher")
-unknownSummarySlot.label:SetText("0 unbekannt")
+activeSummarySlot.label:SetText(RPWatcher.Localization:Format("SUMMARY_ACTIVE", 0))
+inactiveSummarySlot.label:SetText(RPWatcher.Localization:Format("SUMMARY_PREVIOUS", 0))
+unknownSummarySlot.label:SetText(RPWatcher.Localization:Format("SUMMARY_UNKNOWN", 0))
 updateSummarySlotWidth(activeSummarySlot)
 updateSummarySlotWidth(inactiveSummarySlot)
 updateSummarySlotWidth(unknownSummarySlot)
@@ -144,7 +145,7 @@ emptyHint:SetPoint("TOP", emptySymbol, "BOTTOM", 0, -3)
 emptyHint:SetPoint("LEFT", 4, 0)
 emptyHint:SetPoint("RIGHT", -4, 0)
 emptyHint:SetJustifyH("CENTER")
-emptyHint:SetText("Keine beobachtenden Spieler erfasst.")
+emptyHint:SetText(L.EMPTY_TITLE)
 Theme:SetFontColor(emptyHint, colors.text)
 
 local emptyHelp = emptyState:CreateFontString(nil, "OVERLAY", Theme.fonts.muted)
@@ -152,7 +153,7 @@ emptyHelp:SetPoint("TOP", emptyHint, "BOTTOM", 0, -4)
 emptyHelp:SetPoint("LEFT", 4, 0)
 emptyHelp:SetPoint("RIGHT", -4, 0)
 emptyHelp:SetJustifyH("CENTER")
-emptyHelp:SetText("Spieler erscheinen hier, nachdem sie dich im Target hatten.")
+emptyHelp:SetText(L.EMPTY_DESCRIPTION)
 Theme:SetFontColor(emptyHelp, colors.secondaryText)
 
 local scrollFrame = CreateFrame("ScrollFrame", nil, listArea, "UIPanelScrollFrameTemplate")
@@ -176,26 +177,7 @@ local currentWatchers
 local listNeedsRefresh = true
 
 local function formatElapsed(seconds)
-    seconds = math.max(0, math.floor(seconds or 0))
-    if seconds < 60 then
-        return seconds .. " Sek."
-    end
-
-    local minutes = math.floor(seconds / 60)
-    local remainingSeconds = seconds % 60
-    if minutes < 60 then
-        if remainingSeconds > 0 then
-            return minutes .. " Min. " .. remainingSeconds .. " Sek."
-        end
-        return minutes .. " Min."
-    end
-
-    local hours = math.floor(minutes / 60)
-    local remainingMinutes = minutes % 60
-    if remainingMinutes > 0 then
-        return hours .. " Std. " .. remainingMinutes .. " Min."
-    end
-    return hours .. " Std."
+    return RPWatcher.Localization:FormatDuration(seconds)
 end
 
 local function getElapsedStart(watcher)
@@ -215,11 +197,11 @@ local function updateRowTime(row, now)
 
     local elapsed = formatElapsed(now - (getElapsedStart(watcher) or now))
     if watcher.observationStatus == RPWatcher.Scanner.STATUS_ACTIVE then
-        row.timeText:SetText("seit " .. elapsed)
+        row.timeText:SetText(RPWatcher.Localization:Format("TIME_ACTIVE", elapsed))
     elseif watcher.observationStatus == RPWatcher.Scanner.STATUS_INACTIVE then
-        row.timeText:SetText("zuletzt vor " .. elapsed)
+        row.timeText:SetText(RPWatcher.Localization:Format("TIME_PREVIOUS", elapsed))
     else
-        row.timeText:SetText("nicht sichtbar · " .. elapsed)
+        row.timeText:SetText(RPWatcher.Localization:Format("TIME_UNKNOWN", elapsed))
     end
 end
 
@@ -231,11 +213,11 @@ end
 
 local function getStatusTooltipText(watcher)
     if watcher.observationStatus == RPWatcher.Scanner.STATUS_ACTIVE then
-        return "Status: Hat dich gerade im Target."
+        return L.STATUS_TOOLTIP_ACTIVE
     elseif watcher.observationStatus == RPWatcher.Scanner.STATUS_INACTIVE then
-        return "Status: Hatte dich zuvor im Target."
+        return L.STATUS_TOOLTIP_PREVIOUS
     end
-    return "Status: Nameplate nicht mehr sichtbar."
+    return L.STATUS_TOOLTIP_UNKNOWN
 end
 
 local function setRowHovered(row, hovered)
@@ -254,15 +236,15 @@ local function showNameTooltip(button)
     GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
     if type(watcher.rpName) == "string" and watcher.rpName ~= "" then
         GameTooltip:AddLine(watcher.rpName, colors.accent[1], colors.accent[2], colors.accent[3], true)
-        GameTooltip:AddLine("Spielname: " .. (watcher.name or "Unbekannt"), colors.text[1], colors.text[2], colors.text[3], true)
+        GameTooltip:AddLine(RPWatcher.Localization:Format("PROFILE_WOW_NAME", watcher.name or L.UNKNOWN_PLAYER_NAME), colors.text[1], colors.text[2], colors.text[3], true)
     else
-        GameTooltip:AddLine(watcher.name or "Unbekannter Spieler", colors.accent[1], colors.accent[2], colors.accent[3], true)
-        GameTooltip:AddLine("Kein RP-Name bekannt.", colors.secondaryText[1], colors.secondaryText[2], colors.secondaryText[3], true)
+        GameTooltip:AddLine(watcher.name or L.UNKNOWN_PLAYER, colors.accent[1], colors.accent[2], colors.accent[3], true)
+        GameTooltip:AddLine(L.PROFILE_NO_RP_NAME, colors.secondaryText[1], colors.secondaryText[2], colors.secondaryText[3], true)
     end
 
     GameTooltip:AddLine(getStatusTooltipText(watcher), colors.secondaryText[1], colors.secondaryText[2], colors.secondaryText[3], true)
     if not RPWatcher.TRP3 or not RPWatcher.TRP3:IsAvailable() then
-        GameTooltip:AddLine("Total RP 3 ist nicht verfügbar.", colors.mutedText[1], colors.mutedText[2], colors.mutedText[3], true)
+        GameTooltip:AddLine(L.TRP3_UNAVAILABLE, colors.mutedText[1], colors.mutedText[2], colors.mutedText[3], true)
     end
     GameTooltip:Show()
 end
@@ -276,7 +258,7 @@ local function showProfileTooltip(button)
     setRowHovered(button.row, true)
     Theme:SetBackdropBackground(button, colors.buttonHover)
     GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
-    GameTooltip:AddLine("TRP3-Profil öffnen", colors.accent[1], colors.accent[2], colors.accent[3])
+    GameTooltip:AddLine(L.PROFILE_TOOLTIP_OPEN, colors.accent[1], colors.accent[2], colors.accent[3])
     GameTooltip:Show()
 end
 
@@ -296,9 +278,9 @@ local function openRowProfile(button)
     if opened then
         return
     elseif reason == "requested" or reason == "queued" or reason == "cooldown" then
-        print("|cff66ccffRPWatcher|r: Profildaten wurden angefragt. Versuche es in wenigen Sekunden erneut.")
+        print("|cff66ccffRPWatcher|r: " .. L.PROFILE_REQUESTED)
     else
-        print("|cff66ccffRPWatcher|r: Das TRP3-Profil konnte nicht geöffnet werden.")
+        print("|cff66ccffRPWatcher|r: " .. L.PROFILE_OPEN_FAILED)
     end
 end
 
@@ -341,7 +323,7 @@ local function acquireRow(index)
     Theme:ApplyBackdrop(row.profileButton, colors.button, colors.border, 1)
     row.profileButton.label = row.profileButton:CreateFontString(nil, "OVERLAY", Theme.fonts.small)
     row.profileButton.label:SetAllPoints()
-    row.profileButton.label:SetText("Profil")
+    row.profileButton.label:SetText(L.PROFILE_BUTTON)
     Theme:SetFontColor(row.profileButton.label, colors.accent)
     row.profileButton:SetScript("OnEnter", showProfileTooltip)
     row.profileButton:SetScript("OnLeave", hideProfileTooltip)
@@ -394,7 +376,7 @@ end
 
 local function updateRow(row, watcher, now, watcherIndex)
     row.watcher = watcher
-    row.nameText:SetText(watcher.rpName or watcher.name or "Unbekannter Spieler")
+    row.nameText:SetText(watcher.rpName or watcher.name or L.UNKNOWN_PLAYER)
     row.alternateBackground:SetShown((watcherIndex % 2) == 0)
     Theme:SetTextureColor(row.alternateBackground, colors.surfaceAlternate, currentBackgroundAlpha * 0.35)
     row.hoverBackground:Hide()
@@ -562,12 +544,12 @@ titleBar:SetScript("OnDragStart", startMoving)
 titleBar:SetScript("OnDragStop", stopMoving)
 
 lockIndicator:SetScript("OnEnter", function(self)
-    showSimpleTooltip(self, "Das RPWatcher-Fenster ist gesperrt.")
+    showSimpleTooltip(self, L.WINDOW_LOCKED_TOOLTIP)
 end)
 lockIndicator:SetScript("OnLeave", hideOwnedTooltip)
 
 resizeHandle:SetScript("OnEnter", function(self)
-    showSimpleTooltip(self, "Fenstergröße ändern")
+    showSimpleTooltip(self, L.WINDOW_RESIZE_TOOLTIP)
 end)
 resizeHandle:SetScript("OnLeave", hideOwnedTooltip)
 
@@ -698,9 +680,9 @@ function UI:RefreshWatcherList()
     watcherCount = activeCount + inactiveCount + unknownCount
     listNeedsRefresh = true
 
-    activeSummarySlot.label:SetText(("%d aktuell"):format(activeCount))
-    inactiveSummarySlot.label:SetText(("%d vorher"):format(inactiveCount))
-    unknownSummarySlot.label:SetText(("%d unbekannt"):format(unknownCount))
+    activeSummarySlot.label:SetText(RPWatcher.Localization:Format("SUMMARY_ACTIVE", activeCount))
+    inactiveSummarySlot.label:SetText(RPWatcher.Localization:Format("SUMMARY_PREVIOUS", inactiveCount))
+    unknownSummarySlot.label:SetText(RPWatcher.Localization:Format("SUMMARY_UNKNOWN", unknownCount))
     updateSummarySlotWidth(activeSummarySlot)
     updateSummarySlotWidth(inactiveSummarySlot)
     updateSummarySlotWidth(unknownSummarySlot)
@@ -788,27 +770,27 @@ end
 -- isn't runtime-tested here.
 function UI:RunSelfTest()
     local results = {}
-    local function check(name, actual, expected)
+    local function check(nameKey, actual, expected)
         results[#results + 1] = {
-            name = name,
+            name = L[nameKey],
             passed = actual == expected,
-            detail = tostring(actual) .. " (erwartet " .. tostring(expected) .. ")",
+            detail = RPWatcher.Localization:Format("SELFTEST_DETAIL_EXPECTED", tostring(actual), tostring(expected)),
         }
     end
 
-    check("Combat: Kampfbeginn unterdrückt ein sichtbares Fenster",
+    check("SELFTEST_COMBAT_1",
         computeActualVisibility(true, false, 1, true), false)
-    check("Combat: manuell geschlossen bleibt nach Kampfende geschlossen",
+    check("SELFTEST_COMBAT_2",
         computeActualVisibility(false, false, 1, false), false)
-    check("Combat: im Kampf angefordertes Öffnen erscheint nach Kampfende",
+    check("SELFTEST_COMBAT_3",
         computeActualVisibility(true, false, 1, false), true)
-    check("Combat: im Kampf angefordertes Schließen bleibt nach Kampfende zu",
+    check("SELFTEST_COMBAT_4",
         computeActualVisibility(false, false, 0, false), false)
-    check("Combat: Auto-Hide-When-Empty bleibt auch nach Kampfende maßgeblich",
+    check("SELFTEST_COMBAT_5",
         computeActualVisibility(true, true, 0, false), false)
-    check("Combat: leere Liste und Kampf gemeinsam bleiben verborgen",
+    check("SELFTEST_COMBAT_6",
         computeActualVisibility(true, true, 0, true), false)
-    check("UI: Hauptfenster verwendet Frame-Strata LOW",
+    check("SELFTEST_UI_STRATA",
         frame:GetFrameStrata(), "LOW")
 
     return results

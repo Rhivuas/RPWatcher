@@ -15,6 +15,9 @@ $distPath = Join-Path $projectRoot 'dist'
 
 $packageAllowlist = @(
     'RPWatcher.toc',
+    'Locale/enUS.lua',
+    'Locale/deDE.lua',
+    'Localization.lua',
     'Core.lua',
     'Performance.lua',
     'Theme.lua',

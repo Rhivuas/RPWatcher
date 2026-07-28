@@ -194,13 +194,14 @@ function Theme:RunSelfTest()
 
     local expectedInactive = { 0.850, 0.680, 0.280 }
     local expectedUnknown = { 0.560, 0.565, 0.590 }
+    local L = RPWatcher.L
     return {
         {
-            name = "Theme: Vorher ist gold/gelb",
+            name = L.THEME_SELFTEST_PREVIOUS_COLOR,
             passed = colorsMatch(self.colors.inactive, expectedInactive),
         },
         {
-            name = "Theme: Unbekannt ist grau",
+            name = L.THEME_SELFTEST_UNKNOWN_COLOR,
             passed = colorsMatch(self.colors.unknown, expectedUnknown),
         },
     }

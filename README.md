@@ -1,11 +1,15 @@
 # RPWatcher
 
-RPWatcher ist ein deutschsprachiges Addon für World of Warcraft Retail. Es zeigt freundliche Spieler mit sichtbarer Nameplate an, nachdem sie den eigenen Charakter mindestens einmal im Target hatten. Ein aktueller, früherer oder wegen fehlender Nameplate unbekannter Target-Status wird übersichtlich dargestellt. Total RP 3 kann optional RP-Namen und Profilöffnung ergänzen.
+RPWatcher ist ein Addon für World of Warcraft Retail mit vollständiger englischer und deutscher Benutzeroberfläche. Es zeigt freundliche Spieler mit sichtbarer Nameplate an, nachdem sie den eigenen Charakter mindestens einmal im Target hatten. Ein aktueller, früherer oder wegen fehlender Nameplate unbekannter Target-Status wird übersichtlich dargestellt. Total RP 3 kann optional RP-Namen und Profilöffnung ergänzen.
 
-- **Version:** 1.2.0
+- **Version:** 1.3.0
 - **Autor:** Mercia
 - **Lizenz:** MIT
 - **Copyright:** Copyright 2026 Mercia
+
+## Sprache
+
+RPWatcher erkennt die WoW-Clientsprache automatisch (`GetLocale()`): `deDE` zeigt die deutsche Oberfläche, `enUS`, `enGB` und jede andere beziehungsweise noch nicht unterstützte Sprache zeigen Englisch als vollständigen Basiskatalog und technischen Fallback. Es gibt keine manuelle Sprachauswahl, keinen Sprach-Slash-Befehl und keine gespeicherte Spracheinstellung; die Sprache wird bei jedem Addonladen neu anhand des Clients bestimmt. Details stehen in [Localization.lua](Localization.lua) und [AGENTS.md](AGENTS.md).
 
 ## Wichtig: Target-Auswahl, nicht Blickrichtung
 
@@ -26,6 +30,7 @@ Nur aktuell API-verfügbare sichtbare Nameplates können live geprüft werden. S
 - Unterstützt optional RP-Namen und Profilöffnung über Total RP 3.
 - Enthält nicht persistente Diagnose- und synthetische Belastungstests sowie interne Selbsttests.
 - Bietet eine eigene Minimap-Schaltfläche für schnellen Zugriff ohne Chatbefehl.
+- Erkennt die WoW-Clientsprache automatisch und zeigt die Oberfläche vollständig auf Deutsch oder Englisch, ohne gespeicherte Spracheinstellung.
 
 ## Projekt- und Addon-Icon
 
@@ -41,7 +46,7 @@ Die Interface-Nummer wurde lokal anhand von Total RP 3 3.3.7 für den Retail-Cli
 
 ## Installation
 
-1. `RPWatcher-1.2.0.zip` entpacken.
+1. `RPWatcher-1.3.0.zip` entpacken.
 2. Den enthaltenen Ordner `RPWatcher` nach `World of Warcraft\_retail_\Interface\AddOns\` kopieren.
 3. Prüfen, dass die Datei `RPWatcher\RPWatcher.toc` existiert und keine Struktur `RPWatcher\RPWatcher\RPWatcher.toc` entstanden ist.
 4. World of Warcraft vollständig starten beziehungsweise neu starten.
@@ -54,7 +59,7 @@ Die Interface-Nummer wurde lokal anhand von Total RP 3 3.3.7 für den Retail-Cli
 3. Eigene SavedVariables nicht löschen, wenn Fenster- und Anzeigeeinstellungen erhalten bleiben sollen.
 4. Spiel starten und mit `/rpw`, `/rpw options` sowie `/reload` die Übernahme prüfen.
 
-Beim Update von 0.9.0 auf 1.0.0 blieb das Datenbankschema unverändert. Beim Update von 1.0.0 auf 1.1.0 wurde das Datenbankschema kontrolliert von Version 2 auf Version 3 erhöht. Beim Update von 1.1.1 auf 1.2.0 wird das Datenbankschema kontrolliert von Version 3 auf Version 4 erhöht: bestehende Fenster- und Benutzereinstellungen bleiben vollständig erhalten, das neue Feld für die Kampf-Auto-Ausblendung erhält automatisch den Standardwert „aus“. Watcher- und RP-Daten sind reine Laufzeitdaten und werden bei Reload oder Neustart ohnehin verworfen.
+Beim Update von 0.9.0 auf 1.0.0 blieb das Datenbankschema unverändert. Beim Update von 1.0.0 auf 1.1.0 wurde das Datenbankschema kontrolliert von Version 2 auf Version 3 erhöht. Beim Update von 1.1.1 auf 1.2.0 wurde das Datenbankschema kontrolliert von Version 3 auf Version 4 erhöht. Beim Update von 1.2.0 auf 1.3.0 bleibt das Datenbankschema unverändert bei Version 4: RPWatcher 1.3.0 fügt ausschließlich die automatische Sprachauswahl der Oberfläche hinzu und speichert dafür keine neuen Felder. Bestehende Fenster- und Benutzereinstellungen bleiben vollständig erhalten. Watcher- und RP-Daten sind reine Laufzeitdaten und werden bei Reload oder Neustart ohnehin verworfen.
 
 ## Statuszustände
 
@@ -136,7 +141,7 @@ Diese Befehle erzeugen ausschließlich nicht persistente Laufzeitdaten:
 - `/rpw perf on|off|reset|report` – Performance-Messung steuern beziehungsweise berichten.
 - `/rpw stress 25|50|100|200` – synthetische UI-Last erzeugen.
 - `/rpw stress clear` – ausschließlich Stressdaten entfernen.
-- `/rpw selftest` – interne, nicht persistente Prüfungen für Watcher-Zeitfortführung, Statusfarben und Kampf-Sichtbarkeit ausführen und als Bericht im Chat ausgeben.
+- `/rpw selftest` – interne, nicht persistente Prüfungen für Watcher-Zeitfortführung, Statusfarben, Kampf-Sichtbarkeit und die Lokalisierungskataloge ausführen und als Bericht im Chat ausgeben.
 
 Diagnose und Stressdaten enthalten keine echten GUID-Ausgaben, werden nicht gespeichert und lösen keine Unit- oder TRP3-Aufrufe mit künstlichen Identitäten aus.
 

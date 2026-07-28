@@ -1,11 +1,11 @@
 # RPWatcher – Benutzeranleitung
 
-Diese Anleitung gilt für RPWatcher 1.1.0 auf World of Warcraft Retail. Die Addon-Oberfläche ist deutschsprachig.
+Diese Anleitung gilt für RPWatcher 1.3.0 auf World of Warcraft Retail. Seit 1.3.0 erkennt RPWatcher die WoW-Clientsprache automatisch: Auf einem deutschen Client (`deDE`) ist die Oberfläche deutsch, auf `enUS`, `enGB` und jeder anderen beziehungsweise noch nicht unterstützten Sprache englisch. Es gibt keine manuelle Sprachauswahl, keinen Sprach-Slash-Befehl und keine gespeicherte Spracheinstellung. Diese Anleitung selbst bleibt deutschsprachig; die englischen Texte entsprechen sinngemäß denselben Inhalten.
 
 ## Installation
 
 1. World of Warcraft vollständig beenden.
-2. `RPWatcher-1.1.0.zip` entpacken.
+2. `RPWatcher-1.3.0.zip` entpacken.
 3. Den enthaltenen Ordner `RPWatcher` nach `World of Warcraft\_retail_\Interface\AddOns\` kopieren.
 4. Die Struktur prüfen: `...\AddOns\RPWatcher\RPWatcher.toc` muss direkt vorhanden sein.
 5. Spiel starten und RPWatcher in der Addon-Liste aktivieren.

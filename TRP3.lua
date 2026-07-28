@@ -3,6 +3,8 @@ local _, RPWatcher = ...
 local TRP3 = {}
 RPWatcher.TRP3 = TRP3
 
+local L = RPWatcher.L
+
 TRP3.PROFILE_REQUEST_COOLDOWN_SECONDS = 30
 TRP3.GLOBAL_REQUEST_INTERVAL_SECONDS = 1
 
@@ -436,17 +438,18 @@ end
 function TRP3:PrintDiagnostics()
     local withRPName, withoutRPName = self:GetWatcherNameCounts()
     local function yesNo(value)
-        return value and "ja" or "nein"
+        return value and L.COMMON_YES or L.COMMON_NO
     end
 
-    print("|cff66ccffRPWatcher|r TRP3-Diagnose:")
-    print("  Total RP 3 geladen: " .. yesNo(self:IsAddOnLoaded()))
-    print("  TRP3_API verfügbar: " .. yesNo(self:IsAPIAvailable()))
-    print("  RP-Namensfunktion verfügbar: " .. yesNo(self:IsRPNameFunctionAvailable()))
-    print("  Profilabfrage verfügbar: " .. yesNo(self:IsProfileRequestAvailable()))
-    print("  Profilöffnung verfügbar: " .. yesNo(self:IsProfileOpenAvailable()))
-    print("  Echte Watcher mit RP-Namen: " .. withRPName)
-    print("  Echte Watcher ohne RP-Namen: " .. withoutRPName)
+    local Localization = RPWatcher.Localization
+    print("|cff66ccffRPWatcher|r " .. L.TRP3_DIAG_HEADER)
+    print(Localization:Format("TRP3_DIAG_LOADED", yesNo(self:IsAddOnLoaded())))
+    print(Localization:Format("TRP3_DIAG_API_AVAILABLE", yesNo(self:IsAPIAvailable())))
+    print(Localization:Format("TRP3_DIAG_NAME_FUNCTION", yesNo(self:IsRPNameFunctionAvailable())))
+    print(Localization:Format("TRP3_DIAG_PROFILE_REQUEST", yesNo(self:IsProfileRequestAvailable())))
+    print(Localization:Format("TRP3_DIAG_PROFILE_OPEN", yesNo(self:IsProfileOpenAvailable())))
+    print(Localization:Format("TRP3_DIAG_WITH_RPNAME", withRPName))
+    print(Localization:Format("TRP3_DIAG_WITHOUT_RPNAME", withoutRPName))
 end
 
 function TRP3:ForgetWatcher(guid)

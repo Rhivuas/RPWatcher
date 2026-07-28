@@ -5,6 +5,7 @@ RPWatcher.Settings = SettingsModule
 
 local Theme = RPWatcher.Theme
 local colors = Theme.colors
+local L = RPWatcher.L
 
 SettingsModule.SCHEMA_VERSION = 4
 
@@ -199,7 +200,7 @@ local function refreshOptionsPanel()
     panelControls.scale.valueText:SetText(("%.2f"):format(SettingsModule:GetWindowScale()))
     panelControls.alpha:SetValue(SettingsModule:GetBackgroundAlpha())
     panelControls.alpha.valueText:SetText(("%d %%"):format(math.floor(SettingsModule:GetBackgroundAlpha() * 100 + 0.5)))
-    panelControls.retention:SetText(SettingsModule:GetUnknownRetentionSeconds() .. " Sekunden")
+    panelControls.retention:SetText(RPWatcher.Localization:Format("SETTINGS_RETENTION_VALUE", SettingsModule:GetUnknownRetentionSeconds()))
     panelControls.autoHide:SetChecked(SettingsModule:IsAutoHideEnabled())
     panelControls.profileButton:SetChecked(SettingsModule:IsProfileButtonEnabled())
     panelControls.minimapButton:SetChecked(SettingsModule:IsMinimapButtonEnabled())
@@ -228,7 +229,7 @@ local function registerOptionsPanel()
 
     local description = optionsPanel:CreateFontString(nil, "OVERLAY", Theme.fonts.body)
     description:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -7)
-    description:SetText("Passe Fenster, Anzeigeverhalten und die optionale Total-RP-3-Schaltfläche an.")
+    description:SetText(L.SETTINGS_DESCRIPTION)
     Theme:SetFontColor(description, colors.secondaryText)
 
     local scrollFrame = CreateFrame("ScrollFrame", nil, optionsPanel, "UIPanelScrollFrameTemplate")
@@ -247,21 +248,21 @@ local function registerOptionsPanel()
     end)
 
     -- Fenster
-    createSectionHeader(scrollChild, "Fenster", 0)
+    createSectionHeader(scrollChild, L.SETTINGS_SECTION_WINDOW, 0)
 
-    panelControls.locked = createCheckbox(scrollChild, "Fenster sperren", 20, -30, function(self)
+    panelControls.locked = createCheckbox(scrollChild, L.SETTINGS_LOCK_WINDOW, 20, -30, function(self)
         if not refreshingPanel then
             SettingsModule:SetWindowLocked(self:GetChecked())
         end
     end)
 
-    panelControls.hideInCombat = createCheckbox(scrollChild, "Im Kampf automatisch ausblenden", 20, -64, function(self)
+    panelControls.hideInCombat = createCheckbox(scrollChild, L.SETTINGS_HIDE_IN_COMBAT, 20, -64, function(self)
         if not refreshingPanel then
             SettingsModule:SetHideInCombatEnabled(self:GetChecked())
         end
     end)
 
-    panelControls.scale = createSlider(scrollChild, "RPWatcherWindowScaleSlider", "Fensterskalierung", 24, -100, 0.80, 1.30, 0.05, function(self, value)
+    panelControls.scale = createSlider(scrollChild, "RPWatcherWindowScaleSlider", L.SETTINGS_WINDOW_SCALE, 24, -100, 0.80, 1.30, 0.05, function(self, value)
         value = roundToStep(value, 0.05)
         self.valueText:SetText(("%.2f"):format(value))
         if not refreshingPanel then
@@ -269,7 +270,7 @@ local function registerOptionsPanel()
         end
     end)
 
-    panelControls.alpha = createSlider(scrollChild, "RPWatcherBackgroundAlphaSlider", "Hintergrundtransparenz", 24, -162, 0.50, 1.00, 0.05, function(self, value)
+    panelControls.alpha = createSlider(scrollChild, "RPWatcherBackgroundAlphaSlider", L.SETTINGS_BACKGROUND_ALPHA, 24, -162, 0.50, 1.00, 0.05, function(self, value)
         value = roundToStep(value, 0.05)
         self.valueText:SetText(("%d %%"):format(math.floor(value * 100 + 0.5)))
         if not refreshingPanel then
@@ -280,19 +281,19 @@ local function registerOptionsPanel()
     panelControls.reset = CreateFrame("Button", nil, scrollChild, "UIPanelButtonTemplate")
     panelControls.reset:SetPoint("TOPLEFT", 24, -224)
     panelControls.reset:SetSize(180, 26)
-    panelControls.reset:SetText("Fenster zurücksetzen")
+    panelControls.reset:SetText(L.SETTINGS_RESET_WINDOW)
     panelControls.reset:SetScript("OnClick", function()
         SettingsModule:ResetWindowSettings()
         refreshOptionsPanel()
-        print("|cff66ccffRPWatcher|r: Fensterposition und Darstellung wurden zurückgesetzt.")
+        print("|cff66ccffRPWatcher|r: " .. L.CHAT_WINDOW_RESET)
     end)
 
-    createHint(scrollChild, "Setzt Position, Größe, Skalierung, Transparenz und Sperrstatus zurück. Kampf-, Anzeige-, TRP3- und Minimap-Optionen bleiben davon unberührt.", 24, -258, 600)
+    createHint(scrollChild, L.SETTINGS_RESET_HINT, 24, -258, 600)
 
     -- Anzeigeverhalten
-    createSectionHeader(scrollChild, "Anzeigeverhalten", -300)
+    createSectionHeader(scrollChild, L.SETTINGS_SECTION_DISPLAY, -300)
 
-    panelControls.autoHide = createCheckbox(scrollChild, "Fenster ausblenden, wenn die Liste leer ist", 20, -332, function(self)
+    panelControls.autoHide = createCheckbox(scrollChild, L.SETTINGS_AUTOHIDE_EMPTY, 20, -332, function(self)
         if not refreshingPanel then
             SettingsModule:SetAutoHideEnabled(self:GetChecked())
         end
@@ -300,7 +301,7 @@ local function registerOptionsPanel()
 
     local retentionLabel = scrollChild:CreateFontString(nil, "OVERLAY", Theme.fonts.label)
     retentionLabel:SetPoint("TOPLEFT", 24, -368)
-    retentionLabel:SetText("Unsichtbare Watcher behalten")
+    retentionLabel:SetText(L.SETTINGS_RETENTION_LABEL)
 
     panelControls.retention = CreateFrame("Button", nil, scrollChild, "UIPanelButtonTemplate")
     panelControls.retention:SetPoint("TOPLEFT", 24, -392)
@@ -320,32 +321,32 @@ local function registerOptionsPanel()
 
     local retentionHint = scrollChild:CreateFontString(nil, "OVERLAY", Theme.fonts.muted)
     retentionHint:SetPoint("LEFT", panelControls.retention, "RIGHT", 10, 0)
-    retentionHint:SetText("15 / 30 / 60 / 120 / 300 Sekunden")
+    retentionHint:SetText(L.SETTINGS_RETENTION_OPTIONS_HINT)
     Theme:SetFontColor(retentionHint, colors.secondaryText)
 
-    createHint(scrollChild, "Kurzzeitig nicht sichtbare Watcher bleiben im Arbeitsspeicher erhalten. Bei ihrer Rückkehr werden bestehende Zeitangaben nach Möglichkeit fortgeführt.", 24, -424, 620)
+    createHint(scrollChild, L.SETTINGS_RETENTION_HINT, 24, -424, 620)
 
     -- Integration
-    createSectionHeader(scrollChild, "Integration", -470)
+    createSectionHeader(scrollChild, L.SETTINGS_SECTION_INTEGRATION, -470)
 
-    panelControls.profileButton = createCheckbox(scrollChild, "TRP3-Profilbutton anzeigen", 20, -502, function(self)
+    panelControls.profileButton = createCheckbox(scrollChild, L.SETTINGS_PROFILE_BUTTON, 20, -502, function(self)
         if not refreshingPanel then
             SettingsModule:SetProfileButtonEnabled(self:GetChecked())
         end
     end)
 
-    createHint(scrollChild, "RP-Namen und Profilabfragen funktionieren unabhängig von dieser Anzeigeoption.", 54, -528, 560)
+    createHint(scrollChild, L.SETTINGS_PROFILE_BUTTON_HINT, 54, -528, 560)
 
     -- Zugriff
-    createSectionHeader(scrollChild, "Zugriff", -568)
+    createSectionHeader(scrollChild, L.SETTINGS_SECTION_ACCESS, -568)
 
-    panelControls.minimapButton = createCheckbox(scrollChild, "Minimap-Schaltfläche anzeigen", 20, -600, function(self)
+    panelControls.minimapButton = createCheckbox(scrollChild, L.SETTINGS_MINIMAP_BUTTON, 20, -600, function(self)
         if not refreshingPanel then
             SettingsModule:SetMinimapButtonEnabled(self:GetChecked())
         end
     end)
 
-    createHint(scrollChild, "Verbirgt oder zeigt die Minimap-Schaltfläche; die gespeicherte Position bleibt dabei erhalten.", 54, -626, 560)
+    createHint(scrollChild, L.SETTINGS_MINIMAP_BUTTON_HINT, 54, -626, 560)
 
     optionsPanel:SetScript("OnShow", refreshOptionsPanel)
 

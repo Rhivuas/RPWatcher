@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.3.0
+
+- Vollständige englische und deutsche Lokalisierung der Laufzeitoberfläche ergänzt: Hauptfenster, Tooltips, Optionsseite, Minimap-Tooltip, Slash-Hilfe, `/rpw selftest`, `/rpw plates`, `/rpw perf` und die TRP3-Diagnose verwenden jetzt ausschließlich zentrale Lokalisierungsschlüssel statt fest eingebetteter deutscher Texte.
+- Neue zentrale Lokalisierungsarchitektur ergänzt: `Locale/enUS.lua` als vollständiger Basiskatalog, `Locale/deDE.lua` als deutscher Katalog mit identischem Schlüsselsatz und identischen Formatplatzhaltern, sowie `Localization.lua` mit `RPWatcher.L`, `RPWatcher.Localization:Get/Format/FormatDuration/BuildCatalog/GetActiveLocale` und einem eigenen Lokalisierungs-Selbsttest.
+- Die Addonsprache wird automatisch anhand der WoW-Clientsprache bestimmt (`GetLocale()`): `deDE` zeigt Deutsch, `enUS`/`enGB` und jede andere beziehungsweise noch nicht unterstützte Sprache zeigen Englisch als Fallback. Es gibt keine manuelle Sprachauswahl, keinen Sprach-Slash-Befehl und keine gespeicherte Spracheinstellung; `RPWatcherDB` enthält weiterhin ausschließlich eigene Fenster- und Benutzereinstellungen.
+- `/rpw selftest` um Lokalisierungsprüfungen erweitert: vorhandene Kataloge, vollständiger Schlüsselsatz, keine leeren Werte, identische Schlüssel und Formatplatzhalter zwischen enUS und deDE, korrektes `BuildCatalog`-Fallbackverhalten für enUS/enGB/deDE/unbekannte Locales sowie eine gültige `FormatDuration`-Ausgabe.
+- Release-Validierung um Prüfungen für die neuen Locale-Dateien, die TOC-Ladereihenfolge und verbliebene fest codierte deutsche Kernstrings an regulären UI-Stellen erweitert.
+- Datenbankschema, Scanner-, Cache-, Kampf-Sichtbarkeits-, TRP3- und Datenschutzlogik bleiben unverändert bei Version 4; es werden keine neuen SavedVariables-Felder und keine Spracheinstellung gespeichert.
+
 ## 1.2.0
 
 - Hauptfenster von `DIALOG` auf die niedrige Frame-Ebene `LOW` umgestellt: RPWatcher bleibt über der Spielwelt sichtbar, tritt aber nicht mehr vor Charakterfenster, Weltkarte, Taschen oder andere Blizzard- und Addonfenster. Kein `Raise()` und kein dynamischer Strata-Wechsel mehr.

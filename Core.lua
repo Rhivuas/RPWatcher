@@ -5,6 +5,8 @@ RPWatcher = RPWatcher or {}
 local Core = {}
 RPWatcher.Core = Core
 
+local L = RPWatcher.L
+
 function Core:GetWindowState()
     return RPWatcher.Settings and RPWatcher.Settings:GetWindowState()
 end
@@ -28,21 +30,21 @@ function Core:ToggleWindow()
 end
 
 function Core:PrintHelp()
-    print("|cff66ccffRPWatcher|r Befehle:")
-    print("  /rpw - Fenster ein- oder ausblenden")
-    print("  /rpw test - drei nicht persistente Testeinträge erzeugen")
-    print("  /rpw clear - alle Laufzeit-Watcher und Testdaten entfernen")
-    print("  /rpw help - diese Hilfe anzeigen")
-    print("  /rpw trp3 - Status der optionalen TRP3-Integration anzeigen")
-    print("  /rpw refresh - RP-Namen kontrolliert aktualisieren")
-    print("  /rpw options - RPWatcher-Einstellungen öffnen")
-    print("  /rpw lock - Fenster sperren")
-    print("  /rpw unlock - Fenster entsperren")
-    print("  /rpw reset - Position und Fensterdarstellung zurücksetzen")
-    print("  /rpw perf [on|off|reset|report] - Laufzeitdiagnose steuern")
-    print("  /rpw plates - aktuelle Nameplate-Mengen diagnostizieren")
-    print("  /rpw stress <25|50|100|200|clear> - synthetische Lastdaten verwalten")
-    print("  /rpw selftest - interne Prüfungen für Cache, Farben und Kampf-Sichtbarkeit ausführen")
+    print("|cff66ccffRPWatcher|r " .. L.HELP_HEADER)
+    print("  " .. L.HELP_TOGGLE)
+    print("  " .. L.HELP_TEST)
+    print("  " .. L.HELP_CLEAR)
+    print("  " .. L.HELP_HELP)
+    print("  " .. L.HELP_TRP3)
+    print("  " .. L.HELP_REFRESH)
+    print("  " .. L.HELP_OPTIONS)
+    print("  " .. L.HELP_LOCK)
+    print("  " .. L.HELP_UNLOCK)
+    print("  " .. L.HELP_RESET)
+    print("  " .. L.HELP_PERF)
+    print("  " .. L.HELP_PLATES)
+    print("  " .. L.HELP_STRESS)
+    print("  " .. L.HELP_SELFTEST)
 end
 
 -- 1.2.0: aggregates each module's own RunSelfTest() (Theme, Scanner, UI)
@@ -59,22 +61,23 @@ function Core:RunSelfTest()
             end
         end
     end
+    collect(RPWatcher.Localization)
     collect(RPWatcher.Theme)
     collect(RPWatcher.Scanner)
     collect(RPWatcher.UI)
 
     local passCount, failCount = 0, 0
-    print("|cff66ccffRPWatcher Selbsttest|r")
+    print("|cff66ccff" .. L.SELFTEST_HEADER .. "|r")
     for _, result in ipairs(allResults) do
         if result.passed then
             passCount = passCount + 1
-            print(("  |cff33ff33[OK]|r %s"):format(result.name))
+            print(("  |cff33ff33%s|r %s"):format(L.SELFTEST_OK, result.name))
         else
             failCount = failCount + 1
-            print(("  |cffff3333[FEHLER]|r %s%s"):format(result.name, result.detail and (" - " .. result.detail) or ""))
+            print(("  |cffff3333%s|r %s%s"):format(L.SELFTEST_FAIL, result.name, result.detail and (" - " .. result.detail) or ""))
         end
     end
-    print(("|cff66ccffRPWatcher|r Selbsttest abgeschlossen: %d bestanden, %d fehlgeschlagen."):format(passCount, failCount))
+    print("|cff66ccffRPWatcher|r " .. RPWatcher.Localization:Format("SELFTEST_SUMMARY", passCount, failCount))
 end
 
 function Core:HandleSlashCommand(message)
@@ -90,12 +93,12 @@ function Core:HandleSlashCommand(message)
         if RPWatcher.UI then
             RPWatcher.UI:SetManualVisibility(true)
         end
-        print("|cff66ccffRPWatcher|r: Drei Testeinträge wurden erzeugt.")
+        print("|cff66ccffRPWatcher|r: " .. L.CHAT_TEST_CREATED)
     elseif command == "clear" then
         if RPWatcher.Scanner then
             RPWatcher.Scanner:ClearWatchers()
         end
-        print("|cff66ccffRPWatcher|r: Alle Laufzeit-Watcher und Testdaten wurden entfernt.")
+        print("|cff66ccffRPWatcher|r: " .. L.CHAT_WATCHERS_CLEARED)
     elseif command == "help" then
         self:PrintHelp()
     elseif command == "trp3" then
@@ -105,27 +108,27 @@ function Core:HandleSlashCommand(message)
     elseif command == "refresh" then
         if RPWatcher.TRP3 then
             local checked, requested, cooldown = RPWatcher.TRP3:RefreshAllWatchers(true)
-            print(("|cff66ccffRPWatcher|r: %d echte Watcher geprüft, %d Profile angefragt, %d durch Abklingzeit übersprungen."):format(checked, requested, cooldown))
+            print("|cff66ccffRPWatcher|r: " .. RPWatcher.Localization:Format("CHAT_REFRESH_RESULT", checked, requested, cooldown))
         end
     elseif command == "options" then
         if not RPWatcher.Settings or not RPWatcher.Settings:OpenOptions() then
-            print("|cff66ccffRPWatcher|r: Die Einstellungsseite konnte nicht direkt geöffnet werden. Sie ist über Optionen > AddOns > RPWatcher erreichbar.")
+            print("|cff66ccffRPWatcher|r: " .. L.CHAT_OPTIONS_OPEN_FAILED)
         end
     elseif command == "lock" then
         if RPWatcher.Settings then
             RPWatcher.Settings:SetWindowLocked(true)
         end
-        print("|cff66ccffRPWatcher|r: Fenster gesperrt.")
+        print("|cff66ccffRPWatcher|r: " .. L.CHAT_WINDOW_LOCKED)
     elseif command == "unlock" then
         if RPWatcher.Settings then
             RPWatcher.Settings:SetWindowLocked(false)
         end
-        print("|cff66ccffRPWatcher|r: Fenster entsperrt.")
+        print("|cff66ccffRPWatcher|r: " .. L.CHAT_WINDOW_UNLOCKED)
     elseif command == "reset" then
         if RPWatcher.Settings then
             RPWatcher.Settings:ResetWindowSettings()
         end
-        print("|cff66ccffRPWatcher|r: Fensterposition und Darstellung wurden zurückgesetzt.")
+        print("|cff66ccffRPWatcher|r: " .. L.CHAT_WINDOW_RESET)
     elseif command == "perf" or command:match("^perf%s+") then
         if RPWatcher.Performance then
             RPWatcher.Performance:HandleCommand(command:match("^perf%s*(.*)$") or "")
@@ -138,22 +141,22 @@ function Core:HandleSlashCommand(message)
         local argument = command:match("^stress%s*(.*)$") or ""
         if argument == "clear" then
             local removed = RPWatcher.Scanner and RPWatcher.Scanner:RemoveStressData() or 0
-            print(("|cff66ccffRPWatcher|r: %d Stress-Testeinträge wurden entfernt."):format(removed))
+            print("|cff66ccffRPWatcher|r: " .. RPWatcher.Localization:Format("CHAT_STRESS_REMOVED", removed))
         else
             local count = tonumber(argument)
             if RPWatcher.Scanner and RPWatcher.Scanner:AddStressData(count) then
                 if RPWatcher.UI then
                     RPWatcher.UI:SetManualVisibility(true)
                 end
-                print(("|cff66ccffRPWatcher|r: %d synthetische Stress-Testeinträge wurden erzeugt."):format(count))
+                print("|cff66ccffRPWatcher|r: " .. RPWatcher.Localization:Format("CHAT_STRESS_CREATED", count))
             else
-                print("|cff66ccffRPWatcher|r: Verwendung: /rpw stress 25|50|100|200|clear")
+                print("|cff66ccffRPWatcher|r: " .. L.CHAT_STRESS_USAGE)
             end
         end
     elseif command == "selftest" then
         self:RunSelfTest()
     else
-        print("|cff66ccffRPWatcher|r: Unbekannter Befehl.")
+        print("|cff66ccffRPWatcher|r: " .. L.CHAT_UNKNOWN_COMMAND)
         self:PrintHelp()
     end
 end
@@ -188,7 +191,7 @@ function Core:Initialize()
         RPWatcher.UI:RefreshWatcherList()
     end
 
-    print("|cff66ccff" .. addonName .. "|r wurde erfolgreich geladen. /rpw blendet das Fenster ein oder aus.")
+    print("|cff66ccff" .. addonName .. "|r " .. L.CHAT_LOADED)
 end
 
 local eventFrame = CreateFrame("Frame")

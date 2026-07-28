@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [ValidatePattern('^\d+\.\d+\.\d+$')]
-    [string]$ExpectedVersion = '1.2.0',
+    [string]$ExpectedVersion = '1.3.0',
     [string]$PackagePath
 )
 
@@ -21,6 +21,9 @@ $projectAssetFiles = @(
 
 $packageAllowlist = @(
     'RPWatcher.toc',
+    'Locale/enUS.lua',
+    'Locale/deDE.lua',
+    'Localization.lua',
     'Core.lua',
     'Performance.lua',
     'Theme.lua',
@@ -37,6 +40,22 @@ $packageAllowlist = @(
     'PRIVACY.md',
     'SUPPORT.md',
     'THIRD_PARTY_NOTICES.md'
+)
+
+# The exact TOC load order required so every catalog and RPWatcher.L exist
+# before any functional module runs; see AGENTS.md.
+$expectedTocLuaOrder = @(
+    'Locale/enUS.lua',
+    'Locale/deDE.lua',
+    'Localization.lua',
+    'Core.lua',
+    'Performance.lua',
+    'Theme.lua',
+    'Settings.lua',
+    'UI.lua',
+    'Minimap.lua',
+    'Scanner.lua',
+    'TRP3.lua'
 )
 
 $expectedProjectFiles = $packageAllowlist + $projectAssetFiles + @(
@@ -57,6 +76,8 @@ $expectedProjectFiles = $packageAllowlist + $projectAssetFiles + @(
     'release/TEST_MATRIX_1.1.1.md',
     'release/RELEASE_NOTES_1.2.0.md',
     'release/TEST_MATRIX_1.2.0.md',
+    'release/RELEASE_NOTES_1.3.0.md',
+    'release/TEST_MATRIX_1.3.0.md',
     'release/PUBLISHING.md',
     '.github/ISSUE_TEMPLATE/bug_report.yml',
     '.github/ISSUE_TEMPLATE/feature_request.yml',
@@ -149,6 +170,11 @@ if (Test-Path -LiteralPath $tocPath -PathType Leaf) {
         if ($packageAllowlist -notcontains $luaFile) {
             Add-ValidationError "TOC-Datei fehlt in der Paket-Allowlist: $luaFile"
         }
+    }
+
+    $normalizedTocLuaOrder = @($tocLuaFiles | ForEach-Object { $_ -replace '\\', '/' })
+    if (($normalizedTocLuaOrder -join '|') -cne ($expectedTocLuaOrder -join '|')) {
+        Add-ValidationError "TOC-Ladereihenfolge weicht von der erwarteten Lokalisierungs-Ladereihenfolge ab: $($normalizedTocLuaOrder -join ', ')"
     }
 
     foreach ($line in $tocLines) {
@@ -370,6 +396,45 @@ if (-not [string]::IsNullOrWhiteSpace($PackagePath)) {
         }
         if ($actualFiles | Where-Object { $_ -match '^RPWatcher/release/assets/' -or $_ -match '(?i)\.png$' }) {
             Add-ValidationError 'ZIP enthält unzulässige Projekt-PNGs oder release/assets-Dateien.'
+        }
+    }
+}
+
+# Known pre-1.3.0 hardcoded German UI strings that must now only exist as
+# quoted literals inside Locale/deDE.lua. A hit in any other packaged Lua
+# file means a visible string was not routed through RPWatcher.L. This list
+# is intentionally a set of exact, quoted phrases (not bare German words), so
+# German text inside code comments is never flagged.
+$knownOldHardcodedGermanStrings = @(
+    'Gesperrt',
+    'Keine beobachtenden Spieler erfasst.',
+    'Fenster sperren',
+    'Im Kampf automatisch ausblenden',
+    'Unbekannter Befehl.',
+    'TRP3-Profil öffnen',
+    'Total RP 3 ist nicht verfügbar.',
+    'Linksklick: Fenster ein-/ausblenden',
+    'Rechtsklick: Einstellungen öffnen',
+    'Ziehen: Position ändern',
+    'Kein RP-Name bekannt.',
+    'Profildaten wurden angefragt. Versuche es in wenigen Sekunden erneut.',
+    'RPWatcher Nameplate-Diagnose',
+    'RPWatcher TRP3-Diagnose:',
+    'Performance-Messung ist aktiv.',
+    'Unsichtbare Watcher behalten',
+    'Fenster ausblenden, wenn die Liste leer ist'
+)
+$localizedLuaFiles = @($packageAllowlist | Where-Object { $_ -match '\.lua$' -and $_ -ne 'Locale/enUS.lua' -and $_ -ne 'Locale/deDE.lua' })
+foreach ($luaFile in $localizedLuaFiles) {
+    $luaFullPath = Join-Path $projectRoot ($luaFile -replace '/', [System.IO.Path]::DirectorySeparatorChar)
+    if (-not (Test-Path -LiteralPath $luaFullPath -PathType Leaf)) {
+        continue
+    }
+    $luaContent = Get-Content -LiteralPath $luaFullPath -Raw -Encoding UTF8
+    foreach ($oldString in $knownOldHardcodedGermanStrings) {
+        $quotedPattern = [regex]::Escape('"' + $oldString + '"')
+        if ($luaContent -match $quotedPattern) {
+            Add-ValidationError "Möglicher verbliebener fest codierter deutscher Text in ${luaFile}: $oldString"
         }
     }
 }

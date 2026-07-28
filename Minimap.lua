@@ -25,6 +25,8 @@ local _, RPWatcher = ...
 local MinimapModule = {}
 RPWatcher.Minimap = MinimapModule
 
+local L = RPWatcher.L
+
 local BORDER_TEXTURE = 136430    -- Interface\Minimap\MiniMap-TrackingBorder
 local BACKGROUND_TEXTURE = 136467 -- Interface\Minimap\UI-Minimap-Background
 local HIGHLIGHT_TEXTURE = 136477  -- Interface\Minimap\UI-Minimap-ZoomButton-Highlight
@@ -123,7 +125,7 @@ local function onClick(self, mouseButton)
         end
     elseif mouseButton == "RightButton" then
         if not RPWatcher.Settings or not RPWatcher.Settings:OpenOptions() then
-            print("|cff66ccffRPWatcher|r: Die Einstellungsseite konnte nicht direkt geöffnet werden. Sie ist über Optionen > AddOns > RPWatcher erreichbar.")
+            print("|cff66ccffRPWatcher|r: " .. L.CHAT_OPTIONS_OPEN_FAILED)
         end
     end
 end
@@ -131,9 +133,9 @@ end
 local function onEnter(self)
     GameTooltip:SetOwner(self, "ANCHOR_LEFT")
     GameTooltip:AddLine("RPWatcher")
-    GameTooltip:AddLine("Linksklick: Fenster ein-/ausblenden", 0.9, 0.9, 0.9, true)
-    GameTooltip:AddLine("Rechtsklick: Einstellungen öffnen", 0.9, 0.9, 0.9, true)
-    GameTooltip:AddLine("Ziehen: Position ändern", 0.9, 0.9, 0.9, true)
+    GameTooltip:AddLine(L.MINIMAP_TOOLTIP_LEFT_CLICK, 0.9, 0.9, 0.9, true)
+    GameTooltip:AddLine(L.MINIMAP_TOOLTIP_RIGHT_CLICK, 0.9, 0.9, 0.9, true)
+    GameTooltip:AddLine(L.MINIMAP_TOOLTIP_DRAG, 0.9, 0.9, 0.9, true)
     GameTooltip:Show()
 end
 
