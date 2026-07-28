@@ -4,16 +4,19 @@ local Localization = {}
 RPWatcher.Localization = Localization
 
 -- Extracts string.format conversion specifiers from a template, in order,
--- as their conversion letter only (e.g. "d", "s", "f"). A literal "%%" never
--- matches here because the pattern requires a letter immediately after the
--- optional flags/width/precision, and "%" is not a letter -- so escaped
--- percent signs are correctly never counted as placeholders.
+-- as their conversion letter only (e.g. "d", "s", "f"). Escaped "%%" pairs
+-- are stripped first: the flag class below includes a literal space (a
+-- valid printf flag), so without this step a second "%" immediately
+-- followed by " <letter>" -- e.g. "100%% done" -- would let the scan skip
+-- past the space as a flag and misread the "d" in "done" as a real
+-- placeholder. Stripping "%%" pairs up front avoids that entirely.
 local function extractPlaceholders(text)
     local placeholders = {}
     if type(text) ~= "string" then
         return placeholders
     end
-    for conversion in text:gmatch("%%[%-%+ #0]*%d*%.?%d*(%a)") do
+    local scanText = text:gsub("%%%%", "")
+    for conversion in scanText:gmatch("%%[%-%+ #0]*%d*%.?%d*(%a)") do
         placeholders[#placeholders + 1] = conversion
     end
     return placeholders
@@ -226,8 +229,26 @@ function Localization:RunSelfTest()
     check("L_SELFTEST_PLACEHOLDERS_MATCH", placeholdersOK, mismatchDetail)
     check("L_SELFTEST_PLACEHOLDER_ORDER", orderTypeOK, mismatchDetail)
 
-    local escapedPlaceholders = extractPlaceholders("100%% done")
-    check("L_SELFTEST_ESCAPED_PERCENT", #escapedPlaceholders == 0, tostring(#escapedPlaceholders))
+    -- Purely internal fixture strings, never inserted into a locale catalog
+    -- and never shown to the player -- only the aggregate pass/fail (via the
+    -- existing L_SELFTEST_ESCAPED_PERCENT catalog key) is ever displayed.
+    local escapedPercentCases = {
+        { text = "100%% done", expected = {} },
+        { text = "%d items", expected = { "d" } },
+        { text = "%%%d", expected = { "d" } },
+        { text = "%%%%", expected = {} },
+        { text = "%.3f ms", expected = { "f" } },
+        { text = "%s %% %d", expected = { "s", "d" } },
+    }
+    local escapedPercentOK, escapedPercentDetail = true, nil
+    for _, case in ipairs(escapedPercentCases) do
+        local actual = extractPlaceholders(case.text)
+        if not placeholdersEqual(actual, case.expected) then
+            escapedPercentOK = false
+            escapedPercentDetail = case.text
+        end
+    end
+    check("L_SELFTEST_ESCAPED_PERCENT", escapedPercentOK, escapedPercentDetail)
 
     local enUSBuilt = self:BuildCatalog("enUS")
     local enGBBuilt = self:BuildCatalog("enGB")
